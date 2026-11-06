@@ -94,21 +94,65 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+import urllib.parse
+
 IS_VERCEL = os.environ.get("VERCEL", "0") == "1"
 
 if IS_VERCEL:
+    db_host = os.environ.get('DB_HOST', '')
+    db_port = os.environ.get('DB_PORT', '27430')
+    db_name = os.environ.get('DB_NAME', 'defaultdb')
+    db_user = os.environ.get('DB_USER', 'avnadmin')
+    db_password = os.environ.get('DB_PASSWORD', '')
+
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        parsed = urllib.parse.urlparse(database_url)
+        db_host = parsed.hostname or db_host
+        db_port = str(parsed.port) if parsed.port else db_port
+        db_user = parsed.username or db_user
+        db_password = parsed.password or db_password
+        db_name = parsed.path.lstrip('/') or db_name
+
+    if "://" in db_host:
+        parsed = urllib.parse.urlparse(db_host)
+        db_host = parsed.hostname or db_host
+        if parsed.port:
+            db_port = str(parsed.port)
+        if parsed.username:
+            db_user = parsed.username
+        if parsed.password:
+            db_password = parsed.password
+        if parsed.path.lstrip('/'):
+            db_name = parsed.path.lstrip('/')
+
+    if ":" in db_host and not db_host.startswith("http"):
+        parts = db_host.split(":")
+        db_host = parts[0]
+        db_port = parts[1]
+
+    if not db_host or db_host in ('127.0.0.1', 'localhost'):
+        print(f"[SENTRA WARNING] DB_HOST belum diatur dengan benar di Vercel: host='{db_host}', port='{db_port}'")
+
+    ssl_options = {
+        'charset': 'utf8mb4',
+    }
+    if os.environ.get("DB_SSL_DISABLED", "0") != "1":
+        ca_path = os.environ.get("DB_SSL_CA")
+        if ca_path and os.path.exists(ca_path):
+            ssl_options['ssl'] = {'ca': ca_path}
+        else:
+            ssl_options['ssl'] = {'check_hostname': False, 'verify_mode': 'none'}
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.environ.get('DB_NAME', 'defaultdb'),
-            'USER': os.environ.get('DB_USER', 'avnadmin'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-            'HOST': os.environ.get('DB_HOST', ''),
-            'PORT': int(os.environ.get('DB_PORT', '27430')),
-            'OPTIONS': {
-                'charset': 'utf8mb4',
-                'ssl': {'ssl_mode': 'REQUIRED'},
-            },
+            'NAME': db_name,
+            'USER': db_user,
+            'PASSWORD': db_password,
+            'HOST': db_host,
+            'PORT': int(db_port) if db_port and str(db_port).isdigit() else 3306,
+            'OPTIONS': ssl_options,
         }
     }
 else:
