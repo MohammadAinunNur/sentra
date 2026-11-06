@@ -1,4 +1,0 @@
-django>=6.1.1
-pymysql
-cryptography
-python-dotenv

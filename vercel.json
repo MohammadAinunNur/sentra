@@ -9,11 +9,7 @@
   ],
   "routes": [
     {
-      "src": "/static/(.*)",
-      "dest": "/static/$1"
-    },
-    {
-      "src": "(.*)",
+      "src": "/(.*)",
       "dest": "config/wsgi.py"
     }
   ]
