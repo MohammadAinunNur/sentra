@@ -3,7 +3,10 @@ import urllib3
 import requests
 from django.core.management.base import BaseCommand
 from apps.core.models import Komentar
-from transformers import pipeline
+try:
+    from transformers import pipeline
+except ImportError:
+    pipeline = None
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -14,6 +17,10 @@ class Command(BaseCommand):
         ACCESS_TOKEN = "EAAZAbCoPFcB4BS60tphNirxd7cTT150673EF6Id3IWktjixJ1o4VsSdk82ZAA7kxOs5ePED4IeXcYn1f6KeQVsN9KGRYBoWd2lKzx8GTLVK2OwbZBPWeXZBzZAEDAQqBbvapXWYLxDrb3RRVaZAToGHU4kdhfrYGyQZCPJu9uDefgPUs7GIlyx9t6geqsJn"
         IG_USER_ID = "17841415868144059"
         
+        if pipeline is None:
+            self.stdout.write(self.style.ERROR("Library transformers belum terpasang. Jalankan 'pip install transformers torch' untuk menggunakan fitur ini secara lokal."))
+            return
+
         self.stdout.write("Memuat model AI dari Hugging Face (Mohon tunggu sebentar)...")
         
         # Menggunakan model bert-base-multilingual-uncased-sentiment yang stabil dan mendukung bahasa Indonesia
