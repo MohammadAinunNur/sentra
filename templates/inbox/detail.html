@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Detail Mention - SENTRA{% endblock %}
+{% block page_title %}Detail Mention{% endblock %}
+
+{% block content %}
+<!-- Tombol Kembali ke Inbox -->
+<div style="margin-bottom: 16px;">
+  <a href="{% url 'inbox:list' %}" class="muted" style="font-size: 0.88rem; font-weight: 500;">
+    <i class="fa-solid fa-arrow-left"></i> Kembali ke Multichannel Inbox
+  </a>
+</div>
+
+<div class="grid grid-2" style="align-items: start;">
+  <!-- ==========================================
+       1. KARTU DETAIL MENTION / POSTINGAN
+       ========================================== -->
+  <div class="card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <i class="fa-brands fa-instagram" style="font-size: 2rem; color: #e1306c;"></i>
+        <div>
+          <h2 style="margin: 0; font-size: 1.05rem;">@{{ m.username }}</h2>
+          <div class="muted" style="font-size: 0.8rem;">
+            Instagram • {{ m.dibuat_pada|date:"d M Y H:i" }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kotak Isi Post/Komentar -->
+    <div style="border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 20px; background: #fafbfc;">
+      <p style="font-size: 0.95rem; margin: 0 0 12px; line-height: 1.5; color: var(--text);">
+        {{ m.comment_text }}
+      </p>
+      <hr style="border: 0; border-top: 1px solid var(--line); margin: 12px 0;">
+      <small class="muted"><strong>Caption Postingan:</strong> {{ m.caption|default:"Tanpa caption" }}</small>
+    </div>
+
+    <!-- Tombol Aksi -->
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <a class="btn" href="{% url 'tickets:create' %}?mention={{ m.pk }}" style="font-size: 0.88rem;">
+        <i class="fa-solid fa-ticket"></i> Buat Tiket
+      </a>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       2. KARTU ANALISIS AI
+       ========================================== -->
+  <div class="card">
+    <h2><i class="fa-solid fa-brain" style="color: var(--blue);"></i> Analisis Sentimen AI</h2>
+
+    <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+      <!-- Sentimen -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--line);">
+        <span class="muted" style="font-size: 0.88rem;">Status Sentimen</span>
+        <div>
+          {% if m.sentiment == 'POSITIVE' %}
+            <span class="badge" style="background: #d1fae5; color: #065f46; padding: 5px 14px; font-weight: 600;">Positif</span>
+          {% elif m.sentiment == 'NEGATIVE' %}
+            <span class="badge" style="background: #fee2e2; color: #991b1b; padding: 5px 14px; font-weight: 600;">Negatif</span>
+          {% else %}
+            <span class="badge" style="background: #e2e8f0; color: #475569; padding: 5px 14px; font-weight: 600;">Netral</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Detail Terdeteksi -->
+      <div style="background: #eef6ff; border-radius: 10px; padding: 14px; border: 1px dashed #bcdcff; margin-top: 4px;">
+        <div style="font-weight: 700; font-size: 0.85rem; color: #0056b3; margin-bottom: 6px;">
+          <i class="fa-solid fa-circle-info"></i> Catatan Model AI
+        </div>
+        <p style="font-size: 0.85rem; margin: 0; color: #1e4273; line-height: 1.5;">
+          Klasifikasi ini dihasilkan secara lokal oleh model IndoRoBERTa berdasarkan isi teks komentar pengguna.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

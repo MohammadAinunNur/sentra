@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Selesaikan Tiket - {{ t.code }}{% endblock %}
+{% block page_title %}Selesaikan {{ t.code }}{% endblock %}
+
+{% block content %}
+<!-- Tombol Kembali ke Detail Tiket -->
+<div style="margin-bottom: 16px;">
+  <a href="{% url 'tickets:detail' t.pk %}" class="muted" style="font-size: 0.88rem; font-weight: 500;">
+    <i class="fa-solid fa-arrow-left"></i> Kembali ke Detail Tiket
+  </a>
+</div>
+
+<div class="card" style="max-width: 680px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border-radius: 14px; border: 1px solid var(--line);">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line);">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--green-bg); color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+        <i class="fa-solid fa-clipboard-check"></i>
+      </div>
+      <div>
+        <h2 style="margin: 0; font-size: 1.1rem; color: var(--text);">Penyelesaian & Hasil Pekerjaan</h2>
+        <span class="muted" style="font-size: 0.78rem;">Simpan keterangan kerja dan lampiran foto dokumen bukti pengerjaan</span>
+      </div>
+    </div>
+    <span class="badge badge-open">{{ t.code }}</span>
+  </div>
+
+  <!-- Ringkasan Tiket -->
+  <div style="border: 1px solid var(--line); border-radius: 12px; padding: 16px; background: #fafbfc; margin-bottom: 22px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+      <span class="muted" style="font-size: 0.78rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Ringkasan Tiket</span>
+      <span class="badge badge-{{ t.priority }}" style="font-size: 0.72rem;">{{ t.get_priority_display }}</span>
+    </div>
+    <div style="font-weight: 700; font-size: 0.98rem; color: var(--text); margin-bottom: 6px;">
+      {{ t.title }}
+    </div>
+    {% if t.description %}
+      <div style="font-size: 0.85rem; color: var(--text-gray); line-height: 1.4;">
+        {{ t.description|truncatewords:25 }}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Form Catatan Penyelesaian & Upload Foto -->
+  <form method="post" enctype="multipart/form-data" id="closeTicketForm">
+    {% csrf_token %}
+
+    <!-- 1. Catatan Keterangan Hasil Pekerjaan -->
+    <div class="form-row" style="margin-bottom: 20px;">
+      <label for="id_resolution_note" style="display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">
+        <span>
+          <i class="fa-solid fa-file-pen" style="color: var(--blue); margin-right: 6px;"></i>
+          Catatan Keterangan Hasil Pekerjaan <span style="color: var(--red);">*</span>
+        </span>
+        <span class="muted" style="font-size: 0.78rem; font-weight: 400;">Wajib diisi</span>
+      </label>
+      <textarea 
+        name="resolution_note" 
+        id="id_resolution_note" 
+        rows="4" 
+        required 
+        placeholder="Tuliskan ringkasan tindakan yang telah diambil, solusi perbaikan, atau keterangan hasil pekerjaan secara lengkap..."
+        style="width: 100%; border-radius: 10px; border: 1px solid var(--line); padding: 12px; font-family: inherit; font-size: 0.88rem; line-height: 1.5; resize: vertical;"
+      >{{ form.resolution_note.value|default:'' }}</textarea>
+      {% if form.resolution_note.errors %}
+        <div class="errorlist" style="color: var(--red); font-size: 0.82rem; margin-top: 4px;">
+          {{ form.resolution_note.errors }}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- 2. Dokumen Foto Hasil Pekerjaan -->
+    <div class="form-row" style="margin-bottom: 20px;">
+      <label for="id_work_result_image" style="display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">
+        <span>
+          <i class="fa-solid fa-camera" style="color: var(--blue); margin-right: 6px;"></i>
+          Dokumen Foto Hasil Pekerjaan
+        </span>
+        <span class="muted" style="font-size: 0.78rem; font-weight: 400;">Format: JPG, PNG, WebP, PDF</span>
+      </label>
+
+      <!-- Custom Upload Box -->
+      <div 
+        id="uploadDropzone" 
+        style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 22px; text-align: center; background: #f8fafc; cursor: pointer; transition: all 0.2s ease; position: relative;"
+        onclick="document.getElementById('id_work_result_image').click()"
+      >
+        <input 
+          type="file" 
+          name="work_result_image" 
+          id="id_work_result_image" 
+          accept="image/*,.pdf" 
+          style="display: none;" 
+          onchange="previewImage(this)"
+        >
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: #e0f2fe; color: var(--blue); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.2rem;">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+        </div>
+        <div style="font-weight: 600; font-size: 0.9rem; color: var(--text);">
+          Klik untuk memilih dokumen foto hasil pekerjaan
+        </div>
+        <div class="muted" style="font-size: 0.78rem; margin-top: 4px;">
+          Ambil foto dari kamera atau pilih file berkas dari perangkat
+        </div>
+      </div>
+
+      <!-- Preview Wadah Foto Terpilih -->
+      <div id="imagePreviewContainer" style="display: none; margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #ffffff;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <span style="font-size: 0.82rem; font-weight: 600; color: var(--green);">
+            <i class="fa-solid fa-circle-check"></i> File Terpilih: <span id="fileName" style="color: var(--text);"></span>
+          </span>
+          <button type="button" onclick="clearSelectedImage()" style="background: none; border: none; color: var(--red); font-size: 0.8rem; cursor: pointer; font-weight: 500;">
+            <i class="fa-solid fa-trash-can"></i> Hapus Foto
+          </button>
+        </div>
+        <div style="max-height: 240px; overflow: hidden; border-radius: 8px; text-align: center; background: #f1f5f9;">
+          <img id="imagePreview" src="" alt="Pratinjau Foto Hasil Kerja" style="max-height: 240px; width: auto; max-width: 100%; object-fit: contain;">
+        </div>
+      </div>
+
+      {% if form.work_result_image.errors %}
+        <div class="errorlist" style="color: var(--red); font-size: 0.82rem; margin-top: 4px;">
+          {{ form.work_result_image.errors }}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- 3. Konfirmasi -->
+    <div style="margin-bottom: 24px; padding: 12px 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;">
+      <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin: 0; font-size: 0.85rem; font-weight: 500; color: #1e40af;">
+        <input type="checkbox" name="confirm" required style="margin-top: 3px; accent-color: var(--blue);">
+        <span>Saya mengonfirmasi bahwa seluruh penanganan telah tuntas, keterangan hasil pekerjaan akurat, dan dokumen foto yang dilampirkan telah sesuai.</span>
+      </label>
+      {% if form.confirm.errors %}
+        <div class="errorlist" style="color: var(--red); font-size: 0.82rem; margin-top: 6px;">
+          {{ form.confirm.errors }}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Tombol Aksi -->
+    <div style="display: flex; gap: 10px; padding-top: 18px; border-top: 1px solid var(--line);">
+      <button type="submit" class="btn" style="flex: 2; font-size: 0.9rem; background: var(--green); border-color: var(--green); padding: 11px;">
+        <i class="fa-solid fa-check-double" style="margin-right: 6px;"></i> Selesaikan Tiket & Simpan Hasil Pekerjaan
+      </button>
+      <a class="btn btn-outline" href="{% url 'tickets:detail' t.pk %}" style="flex: 1; font-size: 0.9rem; padding: 11px; text-align: center;">
+        Batal
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+  function previewImage(input) {
+    const file = input.files && input.files[0];
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    const preview = document.getElementById('imagePreview');
+    const fileNameSpan = document.getElementById('fileName');
+    const dropzone = document.getElementById('uploadDropzone');
+
+    if (file) {
+      fileNameSpan.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+          previewContainer.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Berkas dokumen non-gambar (misal PDF)
+        preview.src = '';
+        preview.style.display = 'none';
+        previewContainer.style.display = 'block';
+      }
+      dropzone.style.borderColor = 'var(--blue)';
+      dropzone.style.background = '#f0f9ff';
+    }
+  }
+
+  function clearSelectedImage() {
+    const input = document.getElementById('id_work_result_image');
+    input.value = '';
+    document.getElementById('imagePreviewContainer').style.display = 'none';
+    document.getElementById('imagePreview').src = '';
+    const dropzone = document.getElementById('uploadDropzone');
+    dropzone.style.borderColor = '#cbd5e1';
+    dropzone.style.background = '#f8fafc';
+  }
+</script>
+{% endblock %}

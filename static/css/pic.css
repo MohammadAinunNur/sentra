@@ -1,0 +1,56 @@
+/* Tambahan tampilan Dasbor PIC (mengikuti desain di PPT).
+   Semua class diawali "pic-" supaya tidak bentrok dengan sentra.css milik teman. */
+
+.pic-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.pic-head h2 { margin: 0; font-size: 1.35rem; color: var(--navy); }
+.pic-head p { margin: 2px 0 0; }
+
+/* Kartu statistik berwarna lembut + ikon bulat */
+.pic-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 18px; }
+.pic-stat { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 14px; border: 1px solid var(--line); color: var(--text); transition: transform .15s, box-shadow .15s; }
+.pic-stat:hover { text-decoration: none; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(11, 42, 91, .10); }
+.pic-stat > span:last-child { display: flex; flex-direction: column; }
+.pic-stat .label { font-size: .9rem; color: var(--navy); }
+.pic-stat .num { font-size: 1.9rem; font-weight: 700; color: var(--navy); line-height: 1.2; }
+.pic-stat .sub { font-size: .8rem; color: var(--muted); }
+.pic-icon { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.pic-icon svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pic-stat.blue   { background: #eef5ff; } .pic-stat.blue .pic-icon   { background: #1f6feb; }
+.pic-stat.red    { background: #fdf0f1; } .pic-stat.red .pic-icon    { background: #f0525d; }
+.pic-stat.orange { background: #fff7e8; } .pic-stat.orange .pic-icon { background: #f5a524; }
+.pic-stat.green  { background: #ecf8f1; } .pic-stat.green .pic-icon  { background: #2fb36d; }
+
+/* Baris dua kolom: tabel (lebar) + SLA (sempit) */
+.pic-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+.pic-row > .card { margin-bottom: 18px; }
+.pic-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.pic-card-head h2 { margin: 0; }
+.pic-card-head a { font-size: .85rem; font-weight: 600; }
+.pic-nowrap { white-space: nowrap; }
+.pic-late { color: var(--red); font-weight: 600; }
+
+/* Donut SLA (pakai conic-gradient, tanpa library) */
+.pic-sla { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin: 6px 0 8px; }
+.pic-donut { --a: 0%; --b: 0%; width: 120px; height: 120px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: conic-gradient(var(--green) 0 var(--a), #f5b82e var(--a) var(--b), var(--red) var(--b) 100%); }
+.pic-donut.empty { background: #e8edf7; }
+.pic-donut > div { width: 84px; height: 84px; border-radius: 50%; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.pic-donut strong { font-size: 1.35rem; color: var(--navy); line-height: 1.1; }
+.pic-donut small { color: var(--muted); font-size: .72rem; }
+.pic-legend { list-style: none; margin: 0; padding: 0; font-size: .9rem; }
+.pic-legend li { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.pic-legend b { margin-left: auto; padding-left: 12px; color: var(--navy); }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot.g { background: var(--green); } .dot.y { background: #f5b82e; } .dot.r { background: var(--red); }
+
+.pic-sub { font-size: .92rem; margin: 14px 0 8px; color: var(--navy); }
+.pic-prio { display: grid; grid-template-columns: 62px 1fr 28px; align-items: center; gap: 10px; margin-bottom: 8px; font-size: .88rem; }
+.pic-prio b { text-align: right; color: var(--navy); }
+.bar.p-critical > span { background: var(--red); }
+.bar.p-high > span { background: var(--orange); }
+.bar.p-medium > span { background: #f5b82e; }
+.bar.p-low > span { background: var(--green); }
+
+@media (max-width: 900px) {
+  .pic-row { grid-template-columns: 1fr; }
+}

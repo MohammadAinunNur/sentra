@@ -1,0 +1,90 @@
+{% load static %}<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SENTRA{% endblock %} - SENTRA</title>
+  
+  <!-- Font Awesome (Ikon) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Custom CSS Utama SENTRA -->
+  <link rel="stylesheet" href="{% static 'css/sentra.css' %}">
+
+  <!-- Block tambahan untuk CSS khusus halaman tertentu (seperti auth.css) -->
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+{% if user.is_authenticated %}
+  <div class="layout">
+    {% include "partials/sidebar.html" %}
+    
+    <main class="main">
+      <!-- Topbar Header sesuai Desain SENTRA -->
+      <header class="topbar">
+        <div>
+          <a href="#" class="muted" style="font-size: 0.8rem;"><i class="fa-solid fa-chevron-left"></i> Dashboard</a>
+          <h1 style="margin-top: 2px;">{% block page_title %}Executive Dashboard{% endblock %}</h1>
+          <p class="muted" style="margin: 0; font-size: 0.85rem;">Ringkasan sentimen dan engagement media sosial secara real-time</p>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <!-- Filter Tanggal Topbar -->
+          <div class="date-filter" style="display: flex; align-items: center; gap: 8px; background: #fff; padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.85rem;">
+            <i class="fa-regular fa-calendar muted"></i>
+            <span>1 Jun 2026 - 30 Jun 2026</span>
+            <i class="fa-solid fa-chevron-down muted" style="font-size: 0.7rem;"></i>
+          </div>
+
+          <!-- Lonceng Notifikasi -->
+          <div style="position: relative; cursor: pointer;">
+            <i class="fa-regular fa-bell" style="font-size: 1.2rem; color: var(--text-gray);"></i>
+            <span style="position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: var(--red); border-radius: 50%;"></span>
+          </div>
+
+          <!-- User Info Profil -->
+          <div class="user">
+            <div style="width: 36px; height: 36px; border-radius: 50%; background: #007aff; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem;">
+              {{ user.username|slice:":2"|upper }}
+            </div>
+            <div style="display: flex; flex-direction: column; line-height: 1.2;">
+              <span style="font-weight: 600; color: var(--text);">{{ user.get_full_name|default:user.username }}</span>
+              <span class="muted" style="font-size: 0.75rem;">{{ user.get_role_display|default:"Admin" }}</span>
+            </div>
+            <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+              <button class="btn btn-outline btn-sm" title="Keluar" style="padding: 4px 8px; margin-left: 8px;"><i class="fa-solid fa-sign-out-alt"></i></button>
+            </form>
+          </div>
+        </div>
+      </header>
+
+      {% if messages %}
+        <ul class="messages">{% for m in messages %}<li>{{ m }}</li>{% endfor %}</ul>
+      {% endif %}
+
+      <!-- Konten Utama Dashboard/Page -->
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Library Chart.js untuk Grafik -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  {% block extra_js %}{% endblock %}
+
+{% else %}
+  <!-- Konten Halaman Publik (Login / Register) -->
+  {% block public %}{% endblock %}
+  
+  <!-- Block tambahan untuk script khusus halaman publik/auth -->
+  {% block scripts %}{% endblock %}
+{% endif %}
+
+</body>
+</html>

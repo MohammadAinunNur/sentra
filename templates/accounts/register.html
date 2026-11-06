@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Daftar Akun Baru{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block public %}
+<div class="auth-layout">
+
+  <!-- Left Column: Visual Showcase -->
+  {% include "accounts/showcase_panel.html" %}
+
+  <!-- Right Column: Registration Form -->
+  <div class="auth-form-panel">
+    <div class="auth-form-panel-inner" style="max-width: 480px;">
+
+      <!-- Header Tampilan Mobile (Hanya di layar kecil) -->
+      <div class="auth-mobile-header">
+        <div class="auth-mobile-brand">
+          <div class="auth-mobile-brand-icon">
+            <i class="fa-solid fa-chart-pie"></i>
+          </div>
+          <h2 class="auth-mobile-brand-title">SENTRA</h2>
+        </div>
+        <span class="auth-status-pill">
+          <span class="auth-pulse-dot"></span> Online
+        </span>
+      </div>
+
+      <!-- Navigasi Tab Modern (Masuk / Daftar) -->
+      <div class="auth-tabs-nav">
+        <a href="{% url 'accounts:login' %}" class="auth-tab-btn">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i>
+          <span>Masuk</span>
+        </a>
+        <a href="{% url 'accounts:register' %}" class="auth-tab-btn active">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>Daftar Akun</span>
+        </a>
+      </div>
+
+      <!-- Judul & Sambutan -->
+      <div class="auth-heading-wrap">
+        <div class="auth-badge-greeting">
+          <i class="fa-solid fa-sparkles"></i> Akses Tim Baru
+        </div>
+        <h1 class="auth-title">Buat Akun SENTRA 🚀</h1>
+        <p class="auth-subtitle">
+          Daftarkan identitas Anda untuk bergabung ke dalam platform intelligence sentimen dan manajemen isu perusahaan.
+        </p>
+      </div>
+
+      <!-- Flash Messages dari Django -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="auth-alert {% if message.tags == 'error' %}auth-alert-error{% elif message.tags == 'success' %}auth-alert-success{% else %}auth-alert-info{% endif %}">
+            <div class="auth-alert-icon">
+              {% if message.tags == 'error' %}
+                <i class="fa-solid fa-circle-exclamation"></i>
+              {% elif message.tags == 'success' %}
+                <i class="fa-solid fa-circle-check"></i>
+              {% else %}
+                <i class="fa-solid fa-circle-info"></i>
+              {% endif %}
+            </div>
+            <div class="auth-alert-content">
+              <p>{{ message }}</p>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Error Form Non-Field -->
+      {% if form.non_field_errors %}
+        <div class="auth-alert auth-alert-error">
+          <div class="auth-alert-icon">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div class="auth-alert-content">
+            {% for error in form.non_field_errors %}
+              <p>{{ error }}</p>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Formulir Pendaftaran -->
+      <form method="post" action="{% url 'accounts:register' %}" id="registerForm" novalidate>
+        {% csrf_token %}
+
+        <!-- Baris 1: Nama Lengkap & Username -->
+        <div class="auth-row-2col">
+          <div class="auth-form-group">
+            <div class="auth-label-wrap">
+              <label for="id_full_name" class="auth-label">Nama Lengkap</label>
+            </div>
+            <div class="auth-input-wrapper">
+              <i class="fa-regular fa-id-card auth-input-icon"></i>
+              {{ form.full_name }}
+            </div>
+            {% if form.full_name.errors %}
+              <span class="auth-field-error">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ form.full_name.errors.0 }}
+              </span>
+            {% endif %}
+          </div>
+
+          <div class="auth-form-group">
+            <div class="auth-label-wrap">
+              <label for="id_reg_username" class="auth-label">Username</label>
+            </div>
+            <div class="auth-input-wrapper">
+              <i class="fa-regular fa-user auth-input-icon"></i>
+              {{ form.username }}
+            </div>
+            {% if form.username.errors %}
+              <span class="auth-field-error">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ form.username.errors.0 }}
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Baris 2: Email & Nomor Telepon -->
+        <div class="auth-row-2col">
+          <div class="auth-form-group">
+            <div class="auth-label-wrap">
+              <label for="id_reg_email" class="auth-label">Email Kerja</label>
+            </div>
+            <div class="auth-input-wrapper">
+              <i class="fa-regular fa-envelope auth-input-icon"></i>
+              {{ form.email }}
+            </div>
+            {% if form.email.errors %}
+              <span class="auth-field-error">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ form.email.errors.0 }}
+              </span>
+            {% endif %}
+          </div>
+
+          <div class="auth-form-group">
+            <div class="auth-label-wrap">
+              <label for="id_reg_phone" class="auth-label">Nomor WhatsApp / HP</label>
+            </div>
+            <div class="auth-input-wrapper">
+              <i class="fa-solid fa-phone auth-input-icon"></i>
+              {{ form.phone }}
+            </div>
+            {% if form.phone.errors %}
+              <span class="auth-field-error">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ form.phone.errors.0 }}
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Pemilihan Role Akun (Kartu Interaktif) -->
+        <div class="auth-form-group">
+          <div class="auth-label-wrap">
+            <label class="auth-label">Pilih Peran Akun (Role)</label>
+          </div>
+          <div class="auth-role-grid">
+            
+            <label class="auth-role-card active" id="card_role_teknisi" onclick="selectRole('teknisi')">
+              <input type="radio" name="role" value="teknisi" id="role_teknisi" checked>
+              <div class="auth-role-icon">
+                <i class="fa-solid fa-screwdriver-wrench"></i>
+              </div>
+              <div class="auth-role-name">Teknisi</div>
+              <div class="auth-role-desc">Inbox, monitoring &amp; buat tiket</div>
+            </label>
+
+            <label class="auth-role-card" id="card_role_manager" onclick="selectRole('manager')">
+              <input type="radio" name="role" value="manager" id="role_manager">
+              <div class="auth-role-icon">
+                <i class="fa-solid fa-chart-pie"></i>
+              </div>
+              <div class="auth-role-name">Manager</div>
+              <div class="auth-role-desc">Dashboard &amp; analitik eksekutif</div>
+            </label>
+
+            <label class="auth-role-card" id="card_role_pic" onclick="selectRole('pic')">
+              <input type="radio" name="role" value="pic" id="role_pic">
+              <div class="auth-role-icon">
+                <i class="fa-solid fa-building-user"></i>
+              </div>
+              <div class="auth-role-name">PIC Unit</div>
+              <div class="auth-role-desc">Penyelesaian tiket unit kerja</div>
+            </label>
+
+          </div>
+          {% if form.role.errors %}
+            <span class="auth-field-error">
+              <i class="fa-solid fa-circle-exclamation"></i> {{ form.role.errors.0 }}
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- Unit Kerja -->
+        <div class="auth-form-group">
+          <div class="auth-label-wrap">
+            <label for="id_reg_unit" class="auth-label">Unit Kerja Penugasan (Opsional)</label>
+          </div>
+          <div class="auth-input-wrapper">
+            <i class="fa-regular fa-building auth-input-icon"></i>
+            {{ form.unit }}
+          </div>
+          {% if form.unit.errors %}
+            <span class="auth-field-error">
+              <i class="fa-solid fa-circle-exclamation"></i> {{ form.unit.errors.0 }}
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- Baris Kata Sandi & Konfirmasi -->
+        <div class="auth-row-2col">
+          <div class="auth-form-group">
+            <div class="auth-label-wrap">
+              <label for="id_reg_password" class="auth-label">Kata Sandi</label>
+            </div>
+            <div class="auth-input-wrapper">
+              <i class="fa-solid fa-lock auth-input-icon"></i>
+              {{ form.password }}
+              <button type="button" class="auth-pwd-toggle" id="toggleRegPassword" aria-label="Toggle password">
+                <i class="fa-regular fa-eye" id="toggleRegIcon"></i>
+              </button>
+            </div>
+            {% if form.password.errors %}
+              <span class="auth-field-error">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ form.password.errors.0 }}
+              </span>
+            {% endif %}
+          </div>
+
+          <div class="auth-form-group">
+            <div class="auth-label-wrap">
+              <label for="id_reg_password_confirm" class="auth-label">Ulangi Kata Sandi</label>
+            </div>
+            <div class="auth-input-wrapper">
+              <i class="fa-solid fa-shield-halved auth-input-icon"></i>
+              {{ form.password_confirm }}
+              <button type="button" class="auth-pwd-toggle" id="toggleConfirmPassword" aria-label="Toggle confirm password">
+                <i class="fa-regular fa-eye" id="toggleConfirmIcon"></i>
+              </button>
+            </div>
+            {% if form.password_confirm.errors %}
+              <span class="auth-field-error">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ form.password_confirm.errors.0 }}
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Live Password Strength Meter -->
+        <div class="auth-pwd-meter" style="margin-top: -10px; margin-bottom: 20px;">
+          <div class="auth-pwd-meter-bar">
+            <div class="auth-pwd-meter-segment" id="seg1"></div>
+            <div class="auth-pwd-meter-segment" id="seg2"></div>
+            <div class="auth-pwd-meter-segment" id="seg3"></div>
+            <div class="auth-pwd-meter-segment" id="seg4"></div>
+          </div>
+          <div class="auth-pwd-meter-info">
+            <span id="strengthText">Kekuatan Sandi: Belum diisi</span>
+            <div class="auth-pwd-rules">
+              <span class="auth-pwd-rule-item" id="ruleLen">
+                <i class="fa-solid fa-circle-check"></i> Min. 8 karakter
+              </span>
+              <span class="auth-pwd-rule-item" id="ruleNum">
+                <i class="fa-solid fa-circle-check"></i> Angka / simbol
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ketentuan & Persetujuan -->
+        <div class="auth-form-group" style="margin-bottom: 24px;">
+          <label class="auth-checkbox-wrap" for="id_terms">
+            {{ form.terms }}
+            <span class="auth-checkbox-label">
+              Saya menyetujui <a href="#" class="auth-link-subtle" onclick="alert('Ketentuan Penggunaan SENTRA:\\n1. Data digunakan untuk keperluan analisis internal.\\n2. Akun tidak boleh dipindahtangankan.\\n3. Kepatuhan terhadap SLA penanganan tiket.'); return false;">Ketentuan Layanan</a> dan Kebijakan Privasi Data SENTRA.
+            </span>
+          </label>
+          {% if form.terms.errors %}
+            <span class="auth-field-error">
+              <i class="fa-solid fa-circle-exclamation"></i> {{ form.terms.errors.0 }}
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- Tombol Submit -->
+        <button type="submit" class="auth-submit-btn" id="btnSubmit">
+          <i class="fa-solid fa-user-check" id="btnIcon"></i>
+          <span id="btnText">Daftarkan Akun Baru</span>
+        </button>
+      </form>
+
+      <!-- Footer Pindah ke Login -->
+      <div class="auth-panel-footer">
+        Sudah memiliki akun terdaftar? 
+        <a href="{% url 'accounts:login' %}">Masuk di Sini <i class="fa-solid fa-arrow-right" style="font-size:0.75rem;"></i></a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Selection Role Cards Interaktif
+  function selectRole(roleValue) {
+    ['teknisi', 'manager', 'pic'].forEach(r => {
+      const card = document.getElementById('card_role_' + r);
+      const radio = document.getElementById('role_' + r);
+      if (card && radio) {
+        if (r === roleValue) {
+          card.classList.add('active');
+          radio.checked = true;
+        } else {
+          card.classList.remove('active');
+          radio.checked = false;
+        }
+      }
+    });
+  }
+
+  // Toggle Visibility Password Utama
+  const toggleRegBtn = document.getElementById('toggleRegPassword');
+  const regPasswordInput = document.getElementById('id_reg_password');
+  const toggleRegIcon = document.getElementById('toggleRegIcon');
+
+  if (toggleRegBtn && regPasswordInput && toggleRegIcon) {
+    toggleRegBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const isPwd = regPasswordInput.getAttribute('type') === 'password';
+      regPasswordInput.setAttribute('type', isPwd ? 'text' : 'password');
+      toggleRegIcon.classList.toggle('fa-eye', !isPwd);
+      toggleRegIcon.classList.toggle('fa-eye-slash', isPwd);
+    });
+  }
+
+  // Toggle Visibility Password Konfirmasi
+  const toggleConfirmBtn = document.getElementById('toggleConfirmPassword');
+  const confirmPasswordInput = document.getElementById('id_reg_password_confirm');
+  const toggleConfirmIcon = document.getElementById('toggleConfirmIcon');
+
+  if (toggleConfirmBtn && confirmPasswordInput && toggleConfirmIcon) {
+    toggleConfirmBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const isPwd = confirmPasswordInput.getAttribute('type') === 'password';
+      confirmPasswordInput.setAttribute('type', isPwd ? 'text' : 'password');
+      toggleConfirmIcon.classList.toggle('fa-eye', !isPwd);
+      toggleConfirmIcon.classList.toggle('fa-eye-slash', isPwd);
+    });
+  }
+
+  // Live Password Strength Calculator
+  if (regPasswordInput) {
+    regPasswordInput.addEventListener('input', function() {
+      const val = this.value;
+      const seg1 = document.getElementById('seg1');
+      const seg2 = document.getElementById('seg2');
+      const seg3 = document.getElementById('seg3');
+      const seg4 = document.getElementById('seg4');
+      const strengthText = document.getElementById('strengthText');
+      const ruleLen = document.getElementById('ruleLen');
+      const ruleNum = document.getElementById('ruleNum');
+
+      const segments = [seg1, seg2, seg3, seg4];
+      segments.forEach(s => s.className = 'auth-pwd-meter-segment');
+
+      if (!val) {
+        strengthText.textContent = 'Kekuatan Sandi: Belum diisi';
+        strengthText.style.color = '';
+        ruleLen.classList.remove('valid');
+        ruleNum.classList.remove('valid');
+        return;
+      }
+
+      let score = 0;
+      const hasLen = val.length >= 8;
+      const hasNum = /\d/.test(val) || /[^A-Za-z0-9]/.test(val);
+      const hasUpperLower = /[a-z]/.test(val) && /[A-Z]/.test(val);
+
+      if (hasLen) { score++; ruleLen.classList.add('valid'); } else { ruleLen.classList.remove('valid'); }
+      if (hasNum) { score++; ruleNum.classList.add('valid'); } else { ruleNum.classList.remove('valid'); }
+      if (hasUpperLower) { score++; }
+      if (val.length >= 12) { score++; }
+
+      if (score <= 1) {
+        seg1.classList.add('active-weak');
+        strengthText.textContent = 'Kekuatan: Lemah (tambahkan variasi)';
+        strengthText.style.color = '#f43f5e';
+      } else if (score === 2) {
+        seg1.classList.add('active-medium');
+        seg2.classList.add('active-medium');
+        strengthText.textContent = 'Kekuatan: Cukup (tambahkan huruf kapital)';
+        strengthText.style.color = '#f59e0b';
+      } else if (score === 3) {
+        seg1.classList.add('active-strong');
+        seg2.classList.add('active-strong');
+        seg3.classList.add('active-strong');
+        strengthText.textContent = 'Kekuatan: Baik';
+        strengthText.style.color = '#05cd99';
+      } else {
+        segments.forEach(s => s.classList.add('active-strong'));
+        strengthText.textContent = 'Kekuatan: Sangat Kuat & Aman 🛡️';
+        strengthText.style.color = '#05cd99';
+      }
+    });
+  }
+
+  // Loading state saat registrasi disubmit
+  const registerForm = document.getElementById('registerForm');
+  if (registerForm) {
+    registerForm.addEventListener('submit', function() {
+      const btn = document.getElementById('btnSubmit');
+      const btnText = document.getElementById('btnText');
+      const btnIcon = document.getElementById('btnIcon');
+      if (btn && btnText && btnIcon) {
+        btn.disabled = true;
+        btn.style.opacity = '0.85';
+        btnIcon.className = 'fa-solid fa-spinner fa-spin';
+        btnText.textContent = 'Mendaftarkan Akun...';
+      }
+    });
+  }
+</script>
+{% endblock %}
+

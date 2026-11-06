@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inbox - SENTRA{% endblock %}
+{% block page_title %}Multichannel Inbox{% endblock %}
+
+{% block content %}
+<!-- Subtitle & Baris Filter Top Header -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <p class="muted" style="margin: 0; font-size: 0.88rem;">Pantau percakapan di berbagai media sosial secara real-time dan kelola dalam satu platform.</p>
+  
+  <form method="get" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+    <select name="sentiment" style="padding: 6px 12px; font-size: 0.85rem;">
+      <option value="">Semua Sentimen</option>
+      {% for v, l in sentiments %}
+        <option value="{{ v }}" {% if f.sentiment == v %}selected{% endif %}>{{ l }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="channel" style="padding: 6px 12px; font-size: 0.85rem;">
+      <option value="">Semua Channel</option>
+      {% for v, l in channels %}
+        <option value="{{ v }}" {% if f.channel == v %}selected{% endif %}>{{ l }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="btn" style="padding: 7px 14px; font-size: 0.85rem;">
+      <i class="fa-solid fa-rotate-right"></i> Filter
+    </button>
+  </form>
+</div>
+
+<!-- ==========================================
+     1. TAB CARDS BADGE CHANNEL
+     ========================================== -->
+<div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 20px;">
+  <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; background: var(--blue); color: #fff; margin-bottom: 0;">
+    <div style="background: rgba(255,255,255,0.2); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+      <i class="fa-solid fa-chart-simple"></i>
+    </div>
+    <div>
+      <div style="font-size: 0.8rem; opacity: 0.9;">Total Mentions</div>
+      <div style="font-size: 1.2rem; font-weight: 800;">{{ total_all|default:0 }}</div>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 0;">
+    <i class="fa-brands fa-instagram" style="font-size: 2rem; color: #e1306c;"></i>
+    <div>
+      <div class="muted" style="font-size: 0.8rem;">Instagram</div>
+      <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">{{ total_ig|default:0 }}</div>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 0;">
+    <i class="fa-solid fa-face-smile" style="font-size: 2rem; color: #22c55e;"></i>
+    <div>
+      <div class="muted" style="font-size: 0.8rem;">Positif</div>
+      <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">{{ total_positive|default:0 }}</div>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 0;">
+    <i class="fa-solid fa-face-meh" style="font-size: 2rem; color: #3b82f6;"></i>
+    <div>
+      <div class="muted" style="font-size: 0.8rem;">Netral</div>
+      <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">{{ total_neutral|default:0 }}</div>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 0;">
+    <i class="fa-solid fa-face-frown" style="font-size: 2rem; color: #ff4d4f;"></i>
+    <div>
+      <div class="muted" style="font-size: 0.8rem;">Negatif</div>
+      <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">{{ total_negative|default:0 }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     2. GRID SPLIT LAYOUT
+     ========================================== -->
+<div class="grid" style="grid-template-columns: 2.2fr 1.5fr 1.3fr; align-items: start;">
+  
+  <!-- KOLOM KIRI: DAFTAR MENTION -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h2 style="margin: 0;"><i class="fa-solid fa-inbox" style="color: var(--blue);"></i> Daftar Mention</h2>
+        <span class="muted" style="font-size: 0.8rem;">{{ page.paginator.count|default:0 }} mention ditemukan</span>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th>User</th>
+            <th>Konten</th>
+            <th>Sentimen</th>
+            <th>Waktu</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in page %}
+          <tr>
+            <td>
+              <i class="fa-brands fa-instagram" style="color: #e1306c; font-size: 1.2rem;"></i>
+            </td>
+            <td style="font-weight: 600;">@{{ m.username|default:"anonim" }}</td>
+            <td>
+              <a href="{% url 'inbox:detail' m.pk %}" style="color: var(--text);">
+                {{ m.comment_text|truncatechars:45 }}
+              </a>
+            </td>
+            <td>
+              {% if m.sentiment == 'POSITIVE' %}
+                <span class="badge" style="background: #d1fae5; color: #065f46; padding: 3px 8px; border-radius: 4px; font-weight: 500;">Positif</span>
+              {% elif m.sentiment == 'NEGATIVE' %}
+                <span class="badge" style="background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 4px; font-weight: 500;">Negatif</span>
+              {% else %}
+                <span class="badge" style="background: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 4px; font-weight: 500;">Netral</span>
+              {% endif %}
+            </td>
+            <td><small class="muted">{{ m.dibuat_pada|date:"d M H:i" }}</small></td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="muted" style="text-align: center; padding: 24px;">Tidak ada mention yang ditemukan.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 16px;">
+      {% include "partials/pagination.html" %}
+    </div>
+  </div>
+
+  <!-- KOLOM TENGAH: PREVIEW MENTION PERTAMA -->
+  {% with first_item=page.0 %}
+  <div class="card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <i class="fa-brands fa-instagram" style="font-size: 2.2rem; color: #e1306c;"></i>
+        <div>
+          <div style="font-weight: 700; font-size: 0.95rem;">@{{ first_item.username|default:"-" }}</div>
+          <div class="muted" style="font-size: 0.78rem;">Instagram • {{ first_item.dibuat_pada|date:"d M Y H:i"|default:"-" }}</div>
+        </div>
+      </div>
+      {% if first_item.sentiment == 'POSITIVE' %}
+        <span class="badge" style="background: #d1fae5; color: #065f46; padding: 3px 8px; border-radius: 4px;">Positif</span>
+      {% elif first_item.sentiment == 'NEGATIVE' %}
+        <span class="badge" style="background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 4px;">Negatif</span>
+      {% else %}
+        <span class="badge" style="background: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 4px;">Netral</span>
+      {% endif %}
+    </div>
+
+    <div style="border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 16px; background: #fafbfc;">
+      <p style="font-size: 0.88rem; margin: 0 0 12px; color: var(--text);">
+        {{ first_item.comment_text|default:"Pilih komentar untuk melihat detail." }}
+      </p>
+    </div>
+
+    <h3 style="font-size: 0.9rem; margin: 0 0 12px; font-weight: 700;">Detail Postingan</h3>
+    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between;"><span class="muted">Post ID</span><span>{{ first_item.post_id|default:"-" }}</span></div>
+      <div style="display: flex; justify-content: space-between;"><span class="muted">Caption</span><span>{{ first_item.caption|default:"-"|truncatechars:30 }}</span></div>
+      <div style="display: flex; justify-content: space-between;"><span class="muted">User</span><span>@{{ first_item.username|default:"-" }}</span></div>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      {% if first_item %}
+        <a href="{% url 'inbox:detail' first_item.pk %}" class="btn" style="flex: 1; justify-content: center; font-size: 0.82rem;">
+          <i class="fa-solid fa-eye"></i> Liha Detail Lengkap
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endwith %}
+
+  <!-- KOLOM KANAN: AI ANALYSIS PREVIEW -->
+  {% with first_item=page.0 %}
+  <div style="display: flex; flex-direction: column; gap: 20px;">
+    <div class="card">
+      <h2 style="font-size: 0.9rem;"><i class="fa-solid fa-brain" style="color: var(--blue);"></i> Status Sentimen (AI)</h2>
+      
+      <div style="text-align: center; margin: 16px 0;">
+        {% if first_item.sentiment == 'POSITIVE' %}
+          <div style="width: 54px; height: 54px; border-radius: 50%; background: #d1fae5; color: #065f46; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 8px;">
+            <i class="fa-solid fa-face-smile"></i>
+          </div>
+          <div style="font-size: 1.2rem; font-weight: 800; color: #065f46;">Positif</div>
+        {% elif first_item.sentiment == 'NEGATIVE' %}
+          <div style="width: 54px; height: 54px; border-radius: 50%; background: #fee2e2; color: #991b1b; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 8px;">
+            <i class="fa-solid fa-face-frown"></i>
+          </div>
+          <div style="font-size: 1.2rem; font-weight: 800; color: #991b1b;">Negatif</div>
+        {% else %}
+          <div style="width: 54px; height: 54px; border-radius: 50%; background: #e2e8f0; color: #475569; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 8px;">
+            <i class="fa-solid fa-face-meh"></i>
+          </div>
+          <div style="font-size: 1.2rem; font-weight: 800; color: #475569;">Netral</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endwith %}
+
+</div>
+{% endblock %}

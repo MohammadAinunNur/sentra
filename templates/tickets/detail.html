@@ -1,0 +1,592 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ t.code }} - SENTRA{% endblock %}
+{% block page_title %}{{ t.code }}{% endblock %}
+
+{% block content %}
+<!-- Tombol Kembali ke Manajemen Tiket -->
+<div style="margin-bottom: 16px;">
+  <a href="{% url 'tickets:list' %}" class="muted" style="font-size: 0.88rem; font-weight: 500;">
+    <i class="fa-solid fa-arrow-left"></i> Kembali ke Daftar Tiket
+  </a>
+</div>
+
+<div class="grid grid-2" style="align-items: start;">
+  <!-- ==========================================
+       1. INFORMASI UTAMA & DETAIL TIKET
+       ========================================== -->
+  <div style="display: flex; flex-direction: column; gap: 20px;">
+    
+    <div class="card" style="box-shadow: 0 2px 12px rgba(0,0,0,0.04); border-radius: 12px; border: 1px solid var(--line);">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+        <h2 style="margin: 0; font-size: 1.15rem; color: var(--text);">
+          <i class="fa-solid fa-file-lines" style="color: var(--blue);"></i> {{ t.title }}
+        </h2>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <span class="badge badge-{{ t.priority }}">{{ t.get_priority_display }}</span>
+          <span class="badge badge-{{ t.status }}">{{ t.get_status_display }}</span>
+          {% if t.escalated %}
+            <span class="badge badge-critical"><i class="fa-solid fa-triangle-exclamation"></i> Eskalasi</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Deskripsi Tiket -->
+      <div style="border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: #fafbfc; margin-bottom: 20px;">
+        <div class="muted" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px;">Uraian Keluhan / Masalah</div>
+        <p style="font-size: 0.92rem; margin: 0; line-height: 1.5; color: var(--text);">
+          {{ t.description|linebreaksbr }}
+        </p>
+      </div>
+
+      <!-- Informasi Detail Grid (Topik, Unit, PIC, SLA) -->
+      <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line);">
+        <div style="display: flex; justify-content: space-between;">
+          <span class="muted"><i class="fa-solid fa-tag"></i> Topik</span>
+          <span style="font-weight: 600;">{{ t.topic|default:"-" }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span class="muted"><i class="fa-solid fa-building"></i> Unit</span>
+          <span style="font-weight: 600;">{{ t.unit|default:"-" }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span class="muted"><i class="fa-solid fa-user-gear"></i> PIC Assigned</span>
+          <span style="font-weight: 600;">{{ t.pic|default:"-" }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span class="muted"><i class="fa-regular fa-clock"></i> Batas SLA</span>
+          <span style="font-weight: 700; color: var(--red);">{{ t.due_at|date:"d M Y H:i"|default:"-" }}</span>
+        </div>
+        
+        {% if t.mention and user.can_manage_inbox %}
+          <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+            <span class="muted"><i class="fa-solid fa-comments"></i> Komentar Asli</span>
+            <a href="{% url 'inbox:detail' t.mention.pk %}" style="font-weight: 600;">
+              Lihat Komentar <i class="fa-solid fa-arrow-right" style="font-size: 0.75rem;"></i>
+            </a>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Tombol Aksi Tiket -->
+      {% if t.is_open %}
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <!-- Quick Status Actions -->
+          <form method="post" action="{% url 'tickets:set_status' t.pk %}" style="display: flex; gap: 8px; flex: 1;">
+            {% csrf_token %}
+            <button class="btn btn-outline" name="status" value="in_progress" style="flex: 1; font-size: 0.82rem; justify-content: center;" title="Ubah status ke In Progress">
+              <i class="fa-solid fa-spinner" style="margin-right: 4px;"></i> Proses Tiket
+            </button>
+            <button class="btn btn-outline" name="status" value="waiting" style="flex: 1; font-size: 0.82rem; justify-content: center;" title="Ubah status ke Menunggu Respons">
+              <i class="fa-regular fa-hourglass-half" style="margin-right: 4px;"></i> Menunggu Respons
+            </button>
+          </form>
+
+          <!-- Tombol Tambah Progres / Catatan & Foto -->
+          <button type="button" class="btn btn-outline" onclick="openProgressModal()" style="font-size: 0.82rem; justify-content: center;" title="Tambah catatan pengerjaan atau foto dokumen progres">
+            <i class="fa-solid fa-camera-retro" style="margin-right: 4px;"></i> Catatan & Foto
+          </button>
+
+          <!-- Tombol Selesaikan Tiket -->
+          <button type="button" class="btn" onclick="openCloseModal()" style="font-size: 0.82rem; background: var(--green); border-color: var(--green); justify-content: center;">
+            <i class="fa-solid fa-check-double" style="margin-right: 4px;"></i> Selesaikan
+          </button>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- ==========================================
+         HASIL PEKERJAAN (JIKA TIKET SUDAH SELESAI)
+         ========================================== -->
+    {% if not t.is_open or t.resolution_note or t.work_result_image %}
+      <div class="card" style="box-shadow: 0 4px 16px rgba(5, 205, 153, 0.08); border-radius: 12px; border: 1px solid #bbf7d0; background: #ffffff;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="width: 28px; height: 28px; border-radius: 50%; background: #dcfce7; color: #15803d; display: inline-flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+              <i class="fa-solid fa-clipboard-check"></i>
+            </span>
+            <div>
+              <h3 style="margin: 0; font-size: 1rem; color: #166534; font-weight: 700;">Hasil Pekerjaan Penanganan Tiket</h3>
+              <div class="muted" style="font-size: 0.75rem;">
+                Diselesaikan pada: <strong>{{ t.resolved_at|date:"d M Y H:i"|default:t.updated_at|date:"d M Y H:i" }}</strong>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="openUpdateModal()" style="font-size: 0.78rem;">
+            <i class="fa-solid fa-pen-to-square"></i> Perbarui Hasil
+          </button>
+        </div>
+
+        <!-- Catatan Keterangan Hasil Pekerjaan -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-comment-dots" style="color: var(--blue);"></i> Catatan Keterangan Hasil Pekerjaan:
+          </div>
+          <div style="background: #f8fafc; border-left: 4px solid var(--green); border-radius: 6px; padding: 12px 14px; font-size: 0.88rem; color: var(--text); line-height: 1.5;">
+            {{ t.resolution_note|linebreaksbr|default:"Tiket ini telah diselesaikan tanpa catatan tambahan." }}
+          </div>
+        </div>
+
+        <!-- Dokumen Foto Hasil Pekerjaan -->
+        <div>
+          <div style="font-weight: 600; font-size: 0.82rem; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-camera" style="color: var(--blue);"></i> Dokumen Foto Hasil Pekerjaan:
+          </div>
+          
+          {% if t.work_result_image %}
+            <div style="border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fafbfc; padding: 12px;">
+              {% if t.is_image %}
+                <!-- Thumbnail Foto dengan Tombol Zoom Lightbox -->
+                <div style="position: relative; border-radius: 8px; overflow: hidden; max-height: 280px; text-align: center; background: #0f172a; cursor: pointer; group" onclick="openLightbox('{{ t.work_result_image.url }}', 'Dokumen Foto Hasil Pekerjaan - {{ t.code }}')">
+                  <img src="{{ t.work_result_image.url }}" alt="Dokumen Foto Hasil Pekerjaan" style="max-height: 280px; width: auto; max-width: 100%; object-fit: contain; display: block; margin: 0 auto; transition: transform 0.2s ease;">
+                  <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.65); color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; display: flex; align-items: center; gap: 5px;">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i> Klik untuk perbesar
+                  </div>
+                </div>
+              {% else %}
+                <!-- Dokumen Non-Foto (misal PDF) -->
+                <div style="display: flex; align-items: center; gap: 12px; padding: 8px;">
+                  <div style="width: 40px; height: 40px; border-radius: 8px; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                    <i class="fa-solid fa-file-pdf"></i>
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 0.88rem;">{{ t.work_result_image.name|slice:"16:" }}</div>
+                    <div class="muted" style="font-size: 0.75rem;">Dokumen Lampiran Hasil Pekerjaan</div>
+                  </div>
+                </div>
+              {% endif %}
+
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);">
+                <span class="muted" style="font-size: 0.75rem;">
+                  <i class="fa-regular fa-file"></i> {{ t.work_result_image.name }}
+                </span>
+                <a href="{{ t.work_result_image.url }}" target="_blank" class="btn btn-outline btn-sm" style="font-size: 0.78rem;">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka / Unduh File Asli
+                </a>
+              </div>
+            </div>
+          {% else %}
+            <div style="border: 1px dashed #cbd5e1; border-radius: 8px; padding: 16px; text-align: center; color: var(--text-gray); font-size: 0.85rem; background: #f8fafc;">
+              <i class="fa-regular fa-image" style="font-size: 1.4rem; color: #94a3b8; display: block; margin-bottom: 6px;"></i>
+              Tidak ada dokumen foto hasil pekerjaan yang dilampirkan.
+              <div style="margin-top: 6px;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="openUpdateModal()" style="font-size: 0.75rem;">
+                  <i class="fa-solid fa-upload"></i> Unggah Foto Sekarang
+                </button>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+
+  <!-- ==========================================
+       2. RIWAYAT PENANGANAN TIMELINE
+       ========================================== -->
+  <div class="card" style="box-shadow: 0 2px 12px rgba(0,0,0,0.04); border-radius: 12px; border: 1px solid var(--line);">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+      <h2 style="font-size: 1.05rem; margin: 0;">
+        <i class="fa-solid fa-clock-rotate-left" style="color: var(--blue);"></i> Riwayat Penanganan
+      </h2>
+      <span class="badge badge-neutral" style="font-size: 0.75rem;">{{ history.count }} Aktivitas</span>
+    </div>
+
+    <ul class="timeline" style="margin: 0; padding-left: 8px;">
+      {% for h in history %}
+        <li style="padding-bottom: 18px;">
+          <div style="font-weight: 700; font-size: 0.88rem; color: var(--text);">
+            {{ h.action }}
+          </div>
+          <div class="muted" style="font-size: 0.78rem; margin-top: 2px;">
+            <i class="fa-regular fa-calendar-check"></i> {{ h.created_at|date:"d M H:i" }}
+            {% if h.actor %}
+              • <i class="fa-regular fa-user"></i> {{ h.actor }}
+            {% endif %}
+          </div>
+          {% if h.note %}
+            <div style="margin-top: 6px; font-size: 0.82rem; color: var(--text); background: #f8fafc; padding: 8px 12px; border-radius: 8px; border-left: 3px solid var(--blue); line-height: 1.4;">
+              {{ h.note|linebreaksbr }}
+            </div>
+          {% endif %}
+
+          {% if h.attachment %}
+            <div style="margin-top: 8px;">
+              {% if h.is_image %}
+                <div style="display: inline-block; cursor: pointer; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); max-width: 150px; background: #000;" onclick="openLightbox('{{ h.attachment.url }}', 'Lampiran Riwayat: {{ h.action }}')">
+                  <img src="{{ h.attachment.url }}" alt="Lampiran Foto" style="width: 100%; max-height: 110px; object-fit: cover; display: block;">
+                </div>
+              {% else %}
+                <a href="{{ h.attachment.url }}" target="_blank" class="btn btn-outline btn-sm" style="font-size: 0.75rem; margin-top: 4px;">
+                  <i class="fa-solid fa-paperclip"></i> Dokumen Lampiran (Buka)
+                </a>
+              {% endif %}
+            </div>
+          {% endif %}
+        </li>
+      {% empty %}
+        <li style="border: none;">
+          <span class="muted" style="font-size: 0.85rem;">Belum ada riwayat aktivitas penanganan.</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL 1: SELESAIKAN TIKET & INPUT HASIL KERJA
+     ========================================== -->
+<div id="closeTicketModal" style="display: none; position: fixed; inset: 0; background: rgba(8, 26, 62, 0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--line);">
+    <div style="padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #ffffff; z-index: 10;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="width: 32px; height: 32px; border-radius: 8px; background: var(--green-bg); color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+          <i class="fa-solid fa-clipboard-check"></i>
+        </span>
+        <h3 style="margin: 0; font-size: 1.1rem; color: var(--text);">Selesaikan Tiket & Hasil Pekerjaan</h3>
+      </div>
+      <button type="button" onclick="closeCloseModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-gray);">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form method="post" action="{% url 'tickets:close' t.pk %}" enctype="multipart/form-data" style="padding: 24px;">
+      {% csrf_token %}
+      
+      <!-- 1. Catatan Hasil Pekerjaan -->
+      <div class="form-row" style="margin-bottom: 18px;">
+        <label for="modal_resolution_note" style="display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px;">
+          <span>
+            <i class="fa-solid fa-file-pen" style="color: var(--blue); margin-right: 4px;"></i> Catatan Keterangan Hasil Pekerjaan <span style="color: var(--red);">*</span>
+          </span>
+          <span class="muted" style="font-size: 0.75rem;">Wajib</span>
+        </label>
+        <textarea 
+          name="resolution_note" 
+          id="modal_resolution_note" 
+          rows="4" 
+          required 
+          placeholder="Tuliskan ringkasan keterangan hasil pekerjaan, solusi yang diimplementasikan, atau respon ke pengguna..."
+          style="width: 100%; border-radius: 10px; border: 1px solid var(--line); padding: 12px; font-family: inherit; font-size: 0.88rem; line-height: 1.5; resize: vertical;"
+        ></textarea>
+      </div>
+
+      <!-- 2. Dokumen Foto Hasil Pekerjaan -->
+      <div class="form-row" style="margin-bottom: 18px;">
+        <label for="modal_work_result_image" style="display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px;">
+          <span>
+            <i class="fa-solid fa-camera" style="color: var(--blue); margin-right: 4px;"></i> Dokumen Foto Hasil Pekerjaan
+          </span>
+          <span class="muted" style="font-size: 0.75rem;">JPG, PNG, WebP, PDF</span>
+        </label>
+
+        <div 
+          id="modalDropzone" 
+          style="border: 2px dashed #cbd5e1; border-radius: 10px; padding: 18px; text-align: center; background: #f8fafc; cursor: pointer; transition: all 0.2s;"
+          onclick="document.getElementById('modal_work_result_image').click()"
+        >
+          <input 
+            type="file" 
+            name="work_result_image" 
+            id="modal_work_result_image" 
+            accept="image/*,.pdf" 
+            style="display: none;" 
+            onchange="previewModalImage(this, 'modalImgPreview', 'modalImgContainer', 'modalFileName')"
+          >
+          <div style="font-size: 1.5rem; color: var(--blue); margin-bottom: 6px;">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <div style="font-weight: 600; font-size: 0.85rem; color: var(--text);">
+            Klik untuk memilih foto dokumen hasil kerja
+          </div>
+          <div class="muted" style="font-size: 0.75rem;">Bisa ambil langsung dari kamera HP atau galeri</div>
+        </div>
+
+        <!-- Pratinjau Foto di Modal -->
+        <div id="modalImgContainer" style="display: none; margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fff;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-size: 0.78rem; font-weight: 600; color: var(--green);">
+              <i class="fa-solid fa-check"></i> <span id="modalFileName"></span>
+            </span>
+            <button type="button" onclick="clearModalImage('modal_work_result_image', 'modalImgContainer', 'modalImgPreview', 'modalDropzone')" style="background: none; border: none; color: var(--red); font-size: 0.78rem; cursor: pointer;">
+              Hapus
+            </button>
+          </div>
+          <img id="modalImgPreview" src="" alt="Pratinjau" style="max-height: 180px; width: auto; max-width: 100%; object-fit: contain; display: block; margin: 0 auto; border-radius: 6px;">
+        </div>
+      </div>
+
+      <!-- 3. Konfirmasi -->
+      <div style="margin-bottom: 20px; padding: 10px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+        <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin: 0; font-size: 0.82rem; color: #166534;">
+          <input type="checkbox" name="confirm" required style="margin-top: 2px; accent-color: var(--green);">
+          <span>Saya memastikan penanganan sudah selesai dan dokumen hasil kerja sudah benar.</span>
+        </label>
+      </div>
+
+      <!-- Tombol Simpan -->
+      <div style="display: flex; gap: 10px;">
+        <button type="submit" class="btn" style="flex: 2; background: var(--green); border-color: var(--green); font-size: 0.88rem; padding: 10px;">
+          <i class="fa-solid fa-check"></i> Simpan & Selesaikan Tiket
+        </button>
+        <button type="button" class="btn btn-outline" onclick="closeCloseModal()" style="flex: 1; font-size: 0.88rem; padding: 10px;">
+          Batal
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL 2: PERBARUI HASIL PEKERJAAN (EDIT)
+     ========================================== -->
+<div id="updateResultModal" style="display: none; position: fixed; inset: 0; background: rgba(8, 26, 62, 0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--line);">
+    <div style="padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #ffffff; z-index: 10;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="width: 32px; height: 32px; border-radius: 8px; background: #e0f2fe; color: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </span>
+        <h3 style="margin: 0; font-size: 1.1rem; color: var(--text);">Perbarui Keterangan & Dokumen Foto</h3>
+      </div>
+      <button type="button" onclick="closeUpdateModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-gray);">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form method="post" action="{% url 'tickets:update_result' t.pk %}" enctype="multipart/form-data" style="padding: 24px;">
+      {% csrf_token %}
+      
+      <div class="form-row" style="margin-bottom: 18px;">
+        <label for="edit_resolution_note" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+          <i class="fa-solid fa-file-pen" style="color: var(--blue); margin-right: 4px;"></i> Catatan Keterangan Hasil Pekerjaan
+        </label>
+        <textarea 
+          name="resolution_note" 
+          id="edit_resolution_note" 
+          rows="4" 
+          required 
+          style="width: 100%; border-radius: 10px; border: 1px solid var(--line); padding: 12px; font-family: inherit; font-size: 0.88rem; line-height: 1.5; resize: vertical;"
+        >{{ t.resolution_note }}</textarea>
+      </div>
+
+      <div class="form-row" style="margin-bottom: 22px;">
+        <label for="edit_work_result_image" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+          <i class="fa-solid fa-camera" style="color: var(--blue); margin-right: 4px;"></i> Dokumen Foto Hasil Pekerjaan (Pilih untuk mengganti)
+        </label>
+        
+        {% if t.work_result_image %}
+          <div style="font-size: 0.78rem; color: var(--text-gray); margin-bottom: 8px;">
+            File saat ini: <a href="{{ t.work_result_image.url }}" target="_blank" style="font-weight: 600;">{{ t.work_result_image.name }}</a>
+          </div>
+        {% endif %}
+
+        <div 
+          id="editDropzone" 
+          style="border: 2px dashed #cbd5e1; border-radius: 10px; padding: 16px; text-align: center; background: #f8fafc; cursor: pointer;"
+          onclick="document.getElementById('edit_work_result_image').click()"
+        >
+          <input 
+            type="file" 
+            name="work_result_image" 
+            id="edit_work_result_image" 
+            accept="image/*,.pdf" 
+            style="display: none;" 
+            onchange="previewModalImage(this, 'editImgPreview', 'editImgContainer', 'editFileName')"
+          >
+          <div style="font-size: 1.3rem; color: var(--blue); margin-bottom: 4px;">
+            <i class="fa-solid fa-upload"></i>
+          </div>
+          <div style="font-weight: 600; font-size: 0.85rem; color: var(--text);">
+            Pilih dokumen foto baru jika ingin mengganti
+          </div>
+        </div>
+
+        <div id="editImgContainer" style="display: none; margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fff;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-size: 0.78rem; font-weight: 600; color: var(--green);">
+              <i class="fa-solid fa-check"></i> <span id="editFileName"></span>
+            </span>
+            <button type="button" onclick="clearModalImage('edit_work_result_image', 'editImgContainer', 'editImgPreview', 'editDropzone')" style="background: none; border: none; color: var(--red); font-size: 0.78rem; cursor: pointer;">
+              Hapus
+            </button>
+          </div>
+          <img id="editImgPreview" src="" alt="Pratinjau" style="max-height: 180px; width: auto; max-width: 100%; object-fit: contain; display: block; margin: 0 auto; border-radius: 6px;">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="submit" class="btn" style="flex: 2; font-size: 0.88rem; padding: 10px;">
+          <i class="fa-solid fa-check"></i> Simpan Perubahan
+        </button>
+        <button type="button" class="btn btn-outline" onclick="closeUpdateModal()" style="flex: 1; font-size: 0.88rem; padding: 10px;">
+          Batal
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL 3: TAMBAH CATATAN & FOTO PROGRES PEKERJAAN
+     ========================================== -->
+<div id="progressModal" style="display: none; position: fixed; inset: 0; background: rgba(8, 26, 62, 0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); border: 1px solid var(--line);">
+    <div style="padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #ffffff; z-index: 10;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="width: 32px; height: 32px; border-radius: 8px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+          <i class="fa-solid fa-spinner"></i>
+        </span>
+        <h3 style="margin: 0; font-size: 1.05rem; color: var(--text);">Update Catatan & Foto Progres</h3>
+      </div>
+      <button type="button" onclick="closeProgressModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-gray);">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <form method="post" action="{% url 'tickets:set_status' t.pk %}" enctype="multipart/form-data" style="padding: 24px;">
+      {% csrf_token %}
+      
+      <div class="form-row" style="margin-bottom: 16px;">
+        <label for="progress_status" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+          Status Penanganan
+        </label>
+        <select name="status" id="progress_status" style="width: 100%;">
+          <option value="in_progress" {% if t.status == 'in_progress' %}selected{% endif %}>In Progress (Sedang Dikerjakan)</option>
+          <option value="waiting" {% if t.status == 'waiting' %}selected{% endif %}>Waiting Response (Menunggu Tanggapan)</option>
+        </select>
+      </div>
+
+      <div class="form-row" style="margin-bottom: 16px;">
+        <label for="progress_note" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+          Catatan Progres Pekerjaan
+        </label>
+        <textarea 
+          name="note" 
+          id="progress_note" 
+          rows="3" 
+          placeholder="Tuliskan catatan progres atau update pekerjaan saat ini..."
+          style="width: 100%; border-radius: 10px; border: 1px solid var(--line); padding: 12px; font-family: inherit; font-size: 0.88rem; line-height: 1.5; resize: vertical;"
+        ></textarea>
+      </div>
+
+      <div class="form-row" style="margin-bottom: 20px;">
+        <label for="progress_attachment" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; display: block;">
+          Lampiran Foto Dokumen (Opsional)
+        </label>
+        <input 
+          type="file" 
+          name="attachment" 
+          id="progress_attachment" 
+          accept="image/*,.pdf" 
+          style="width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 8px; font-size: 0.82rem;"
+        >
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="submit" class="btn" style="flex: 2; font-size: 0.88rem; padding: 10px;">
+          <i class="fa-solid fa-floppy-disk"></i> Simpan Catatan Progres
+        </button>
+        <button type="button" class="btn btn-outline" onclick="closeProgressModal()" style="flex: 1; font-size: 0.88rem; padding: 10px;">
+          Batal
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL 4: LIGHTBOX ENLARGE FOTO
+     ========================================== -->
+<div id="lightboxModal" style="display: none; position: fixed; inset: 0; background: rgba(3, 11, 24, 0.88); backdrop-filter: blur(6px); z-index: 10000; align-items: center; justify-content: center; padding: 24px;" onclick="closeLightbox()">
+  <div style="position: relative; max-width: 90vw; max-height: 90vh;" onclick="event.stopPropagation()">
+    <button type="button" onclick="closeLightbox()" style="position: absolute; top: -38px; right: 0; background: none; border: none; color: #ffffff; font-size: 1.6rem; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <img id="lightboxImg" src="" alt="Perbesar Dokumen Foto" style="max-height: 85vh; max-width: 90vw; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: block; margin: 0 auto; object-fit: contain;">
+    <div id="lightboxCaption" style="color: #ffffff; text-align: center; margin-top: 10px; font-size: 0.85rem; font-weight: 500;"></div>
+  </div>
+</div>
+
+<!-- SCRIPT UNTUK MODAL & PREVIEW -->
+<script>
+  function openCloseModal() {
+    const modal = document.getElementById('closeTicketModal');
+    modal.style.display = 'flex';
+  }
+  function closeCloseModal() {
+    document.getElementById('closeTicketModal').style.display = 'none';
+  }
+
+  function openUpdateModal() {
+    document.getElementById('updateResultModal').style.display = 'flex';
+  }
+  function closeUpdateModal() {
+    document.getElementById('updateResultModal').style.display = 'none';
+  }
+
+  function openProgressModal() {
+    document.getElementById('progressModal').style.display = 'flex';
+  }
+  function closeProgressModal() {
+    document.getElementById('progressModal').style.display = 'none';
+  }
+
+  function openLightbox(url, caption) {
+    const modal = document.getElementById('lightboxModal');
+    const img = document.getElementById('lightboxImg');
+    const cap = document.getElementById('lightboxCaption');
+    img.src = url;
+    cap.textContent = caption || '';
+    modal.style.display = 'flex';
+  }
+  function closeLightbox() {
+    document.getElementById('lightboxModal').style.display = 'none';
+    document.getElementById('lightboxImg').src = '';
+  }
+
+  function previewModalImage(input, imgId, containerId, nameId) {
+    const file = input.files && input.files[0];
+    const previewContainer = document.getElementById(containerId);
+    const preview = document.getElementById(imgId);
+    const fileNameSpan = document.getElementById(nameId);
+
+    if (file) {
+      if (fileNameSpan) {
+        fileNameSpan.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+      }
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+          previewContainer.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.style.display = 'none';
+        previewContainer.style.display = 'block';
+      }
+    }
+  }
+
+  function clearModalImage(inputId, containerId, imgId, dropzoneId) {
+    const input = document.getElementById(inputId);
+    input.value = '';
+    document.getElementById(containerId).style.display = 'none';
+    document.getElementById(imgId).src = '';
+  }
+
+  // Tutup modal jika tombol Escape ditekan
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeCloseModal();
+      closeUpdateModal();
+      closeProgressModal();
+      closeLightbox();
+    }
+  });
+</script>
+{% endblock %}

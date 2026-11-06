@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sentiment Analytics - SENTRA{% endblock %}
+{% block page_title %}Sentiment Analytics{% endblock %}
+
+{% block content %}
+<!-- Subtitle & Baris Filter Top Header -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <p class="muted" style="margin: 0; font-size: 0.88rem;">Analisis sentimen dan data riil dari seluruh percakapan media sosial secara real-time dengan pemrosesan AI lokal.</p>
+  
+  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+    <!-- Filter Django Hari Terakhir -->
+    <form method="get" id="daysForm" style="margin: 0;">
+      <select name="days" onchange="document.getElementById('daysForm').submit()" style="padding: 6px 12px; font-size: 0.85rem;">
+        {% for d in day_options %}
+          <option value="{{ d }}" {% if days == d %}selected{% endif %}>{{ d }} hari terakhir</option>
+        {% endfor %}
+      </select>
+    </form>
+
+    <select style="padding: 6px 12px; font-size: 0.85rem;">
+      <option>Instagram</option>
+    </select>
+  </div>
+</div>
+
+<!-- ==========================================
+     1. STAT CARDS TOP ROW (SENTIMEN & TOTAL RIIL)
+     ========================================== -->
+<div class="grid grid-4" style="margin-bottom: 20px;">
+  <!-- Card Positif -->
+  <div class="card stat" style="margin-bottom: 0;">
+    <div class="icon-shape green">
+      <i class="fa-solid fa-face-smile"></i>
+    </div>
+    <div class="label">Sentimen Positif</div>
+    <div class="num">{{ positive }} <span style="font-size: 0.95rem; color: var(--text-gray); font-weight: 500;">({{ pos_pct }}%)</span></div>
+  </div>
+
+  <!-- Card Netral -->
+  <div class="card stat" style="margin-bottom: 0;">
+    <div class="icon-shape blue">
+      <i class="fa-solid fa-face-meh"></i>
+    </div>
+    <div class="label">Sentimen Netral</div>
+    <div class="num">{{ neutral }} <span style="font-size: 0.95rem; color: var(--text-gray); font-weight: 500;">({{ neu_pct }}%)</span></div>
+  </div>
+
+  <!-- Card Negatif -->
+  <div class="card stat" style="margin-bottom: 0;">
+    <div class="icon-shape red">
+      <i class="fa-solid fa-face-frown"></i>
+    </div>
+    <div class="label">Sentimen Negatif</div>
+    <div class="num">{{ negative }} <span style="font-size: 0.95rem; color: var(--text-gray); font-weight: 500;">({{ neg_pct }}%)</span></div>
+  </div>
+
+  <!-- Card Total Mention -->
+  <div class="card stat" style="margin-bottom: 0;">
+    <div class="icon-shape blue" style="background-color: #00a8ff;">
+      <i class="fa-solid fa-comment-dots"></i>
+    </div>
+    <div class="label">Total Mention</div>
+    <div class="num">{{ total }}</div>
+  </div>
+</div>
+
+<!-- ==========================================
+     2. CHARTS ROW (TREN SENTIMEN DINAMIS)
+     ========================================== -->
+<div class="grid" style="grid-template-columns: 2.2fr 1.8fr; margin-bottom: 20px;">
+  
+  <!-- Line Chart Tren Sentimen -->
+  <div class="card" style="margin-bottom: 0;">
+    <h2><i class="fa-solid fa-chart-line" style="color: var(--blue);"></i> Tren Sentimen ({{ days }} Hari)</h2>
+    <div style="height: 220px; position: relative;">
+      <canvas id="analyticsTrenChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Platform Breakdown Dinamis -->
+  <div class="card" style="margin-bottom: 0;">
+    <h2><i class="fa-solid fa-share-nodes" style="color: var(--blue);"></i> Distribusi Sentimen Instagram</h2>
+
+    <div class="grid" style="grid-template-columns: 1fr 1.2fr; gap: 12px; align-items: center; margin-top: 16px;">
+      <div style="height: 140px; position: relative; display: flex; align-items: center; justify-content: center;">
+        <canvas id="platformDonutChart"></canvas>
+        <div style="position: absolute; text-align: center;">
+          <div style="font-size: 1.1rem; font-weight: 800;">{{ total }}</div>
+          <div style="font-size: 0.65rem; color: var(--text-gray);">Komentar</div>
+        </div>
+      </div>
+
+      <div style="font-size: 0.82rem; display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; justify-content: space-between;">
+          <span><i class="fa-solid fa-circle" style="color: #22c55e;"></i> Positif</span>
+          <span><strong>{{ pos_pct }}%</strong> ({{ positive }})</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span><i class="fa-solid fa-circle" style="color: #3b82f6;"></i> Netral</span>
+          <span><strong>{{ neu_pct }}%</strong> ({{ neutral }})</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span><i class="fa-solid fa-circle" style="color: #ff4d4f;"></i> Negatif</span>
+          <span><strong>{{ neg_pct }}%</strong> ({{ negative }})</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==========================================
+     3. BOTTOM ROW (MENTION TERBARU & INSIGHT AI)
+     ========================================== -->
+<div class="grid" style="grid-template-columns: 2fr 1.5fr; align-items: start;">
+  
+  <!-- DAFTAR MENTION TERBARU DATA RIIL -->
+  <div class="card" style="margin-bottom: 0;">
+    <h2><i class="fa-brands fa-instagram" style="color: #e1306c;"></i> Mention Terbaru (Data Riil)</h2>
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+      {% for m in top_mentions %}
+      <div style="display: flex; gap: 10px; align-items: center; font-size: 0.82rem; padding-bottom: 8px; border-bottom: 1px solid var(--line);">
+        <i class="fa-brands fa-instagram" style="color: #e1306c; font-size: 1.2rem;"></i>
+        <div style="flex: 1;">
+          <div style="font-weight: 600;">@{{ m.username|default:"anonim" }}</div>
+          <div class="muted" style="font-size: 0.75rem;">{{ m.comment_text|truncatechars:60 }}</div>
+        </div>
+        {% if m.sentiment == 'POSITIVE' %}
+          <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 0.7rem;">Positif</span>
+        {% elif m.sentiment == 'NEGATIVE' %}
+          <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 0.7rem;">Negatif</span>
+        {% else %}
+          <span class="badge" style="background: #e2e8f0; color: #475569; font-size: 0.7rem;">Netral</span>
+        {% endif %}
+      </div>
+      {% empty %}
+      <p class="muted" style="font-size: 0.85rem; text-align: center;">Belum ada komentar di database.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- INSIGHT AI RINGKASAN -->
+  <div class="card" style="margin-bottom: 0;">
+    <h2><i class="fa-solid fa-brain" style="color: var(--blue);"></i> Insight Model AI</h2>
+    <div style="background: #eef6ff; border-radius: 10px; padding: 14px; border: 1px dashed #bcdcff; margin-top: 12px;">
+      <div style="font-weight: 700; font-size: 0.85rem; color: #0056b3; margin-bottom: 6px;">
+        <i class="fa-solid fa-circle-info"></i> Ringkasan Klasifikasi
+      </div>
+      <p style="font-size: 0.82rem; margin: 0; color: #1e4273; line-height: 1.5;">
+        Total <strong>{{ total }}</strong> komentar dianalisis menggunakan model IndoRoBERTa. Sentimen didominasi oleh kelas 
+        <strong>
+          {% if positive >= neutral and positive >= negative %}
+            Positif ({{ pos_pct }}%)
+          {% elif negative >= positive and negative >= neutral %}
+            Negatif ({{ neg_pct }}%)
+          {% else %}
+            Netral ({{ neu_pct }}%)
+          {% endif %}
+        </strong>.
+      </p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Label dan data dari Django Context (Format JSON Parsed aman dari error editor)
+    const labels = JSON.parse('{{ chart_labels_json|safe }}');
+    const dataPos = JSON.parse('{{ chart_pos_json|safe }}');
+    const dataNeu = JSON.parse('{{ chart_neu_json|safe }}');
+    const dataNeg = JSON.parse('{{ chart_neg_json|safe }}');
+
+    // 1. Line Chart Tren Sentimen
+    const ctxAnalytics = document.getElementById('analyticsTrenChart').getContext('2d');
+    new Chart(ctxAnalytics, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Positif', data: dataPos, borderColor: '#22c55e', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 },
+          { label: 'Netral', data: dataNeu, borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 },
+          { label: 'Negatif', data: dataNeg, borderColor: '#ff4d4f', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'top' } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: '#f1f5f9' }, beginAtZero: true }
+        }
+      }
+    });
+
+// 2. Donut Chart Sentimen
+const ctxPlatform = document.getElementById('platformDonutChart').getContext('2d');
+    new Chart(ctxPlatform, {
+      type: 'doughnut',
+      data: {
+        labels: ['Positif', 'Netral', 'Negatif'],
+        datasets: [{
+          data: [
+            {{ positive|default:0 }},
+            {{ neutral|default:0 }},
+            {{ negative|default:0 }}
+          ],
+          backgroundColor: ['#22c55e', '#3b82f6', '#ff4d4f'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '75%',
+        plugins: { legend: { display: false } }
+      }
+    });
+  });
+</script>
+{% endblock %}

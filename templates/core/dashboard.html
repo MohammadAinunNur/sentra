@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Executive Dashboard{% endblock %}
+{% block page_title %}Executive Dashboard{% endblock %}
+
+{% block content %}
+<!-- ==========================================
+     1. STAT CARDS TOP ROW
+     ========================================== -->
+<div class="grid grid-4" style="margin-bottom: 20px;">
+  <!-- Card 1: Total Mentions -->
+  <div class="card stat">
+    <div class="icon-shape blue">
+      <i class="fa-solid fa-comment-dots"></i>
+    </div>
+    <div class="label">Total Mentions</div>
+    <div class="num">{{ total|default:"0" }}</div>
+  </div>
+
+  <!-- Card 2: Negative Mentions -->
+  <div class="card stat">
+    <div class="icon-shape red">
+      <i class="fa-solid fa-face-frown"></i>
+    </div>
+    <div class="label">Negative Mentions</div>
+    <div class="num">{{ negative|default:"0" }}</div>
+    {% if total %}
+    <div style="font-size: 0.8rem; color: var(--red); margin-top: 4px; font-weight: 600;">
+      {{ negative_pct|default:"0" }}% <span class="muted" style="font-weight: 400;">dari total mentions</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Card 3: Open Tickets -->
+  <div class="card stat">
+    <div class="icon-shape yellow">
+      <i class="fa-solid fa-ticket"></i>
+    </div>
+    <div class="label">Open Tickets</div>
+    <div class="num">{{ open_tickets|default:"0" }}</div>
+  </div>
+
+  <!-- Card 4: SLA Compliance -->
+  <div class="card stat">
+    <div class="icon-shape green">
+      <i class="fa-solid fa-shield-halved"></i>
+    </div>
+    <div class="label">SLA Compliance</div>
+    <div class="num">{{ sla_compliance|default:"100" }}%</div>
+  </div>
+</div>
+
+<!-- ==========================================
+     2. CHARTS ROW (TREN, KOMPOSISI, TOPIK)
+     ========================================== -->
+<div class="grid" style="grid-template-columns: 2fr 1.5fr 1.5fr; margin-bottom: 20px;">
+  
+  <!-- Line Chart: Tren Sentimen -->
+  <div class="card">
+    <h2><i class="fa-solid fa-chart-line" style="color: var(--blue);"></i> Tren Sentimen</h2>
+    <div style="height: 220px; position: relative;">
+      <canvas id="lineChartTren"></canvas>
+    </div>
+  </div>
+
+  <!-- Doughnut Chart: Komposisi Sentimen -->
+  <div class="card">
+    <h2><i class="fa-solid fa-chart-pie" style="color: var(--blue);"></i> Komposisi Sentimen</h2>
+    <div style="height: 180px; position: relative; display: flex; align-items: center; justify-content: center;">
+      <canvas id="doughnutChartKomposisi"></canvas>
+      <!-- Angka di Tengah Donut -->
+      <div style="position: absolute; text-align: center; pointer-events: none;">
+        <div style="font-size: 1.3rem; font-weight: 800; color: var(--text);">{{ total|default:"0" }}</div>
+        <div style="font-size: 0.7rem; color: var(--text-gray);">Mentions</div>
+      </div>
+    </div>
+    <div style="margin-top: 12px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 4px;">
+      <div style="display: flex; justify-content: space-between;">
+        <span><i class="fa-solid fa-circle" style="color: #22c55e;"></i> Positif</span>
+        <span><strong>{{ positive_pct|default:"0" }}%</strong> ({{ positive|default:"0" }})</span>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span><i class="fa-solid fa-circle" style="color: #3b82f6;"></i> Netral</span>
+        <span><strong>{{ neutral_pct|default:"0" }}%</strong> ({{ neutral|default:"0" }})</span>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span><i class="fa-solid fa-circle" style="color: #ff4d4f;"></i> Negatif</span>
+        <span><strong>{{ negative_pct|default:"0" }}%</strong> ({{ negative|default:"0" }})</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Topik Paling Banyak Dibahas -->
+  <div class="card">
+    <h2><i class="fa-solid fa-list-check" style="color: var(--blue);"></i> Topik Paling Banyak Dibahas</h2>
+    <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
+      {% for topic in topics_list %}
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 4px;">
+          <span><i class="fa-solid fa-tag muted"></i> {{ topic.name }}</span>
+          <span><strong>{{ topic.count }}</strong> <small class="muted">{{ topic.pct }}%</small></span>
+        </div>
+        <div class="bar"><span style="width: {{ topic.pct }}%;"></span></div>
+      </div>
+      {% empty %}
+      <p class="muted" style="font-size: 0.85rem; text-align: center; margin-top: 20px;">Belum ada data topik yang diklasifikasikan.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<!-- ==========================================
+     3. LOWER ROW (MENTIONS TABEL, CRITICAL, SLA)
+     ========================================== -->
+<div class="grid" style="grid-template-columns: 2fr 1.2fr 1fr;">
+  
+  <!-- Tabel Mentions Terbaru -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h2><i class="fa-solid fa-comments" style="color: var(--blue);"></i> Mentions Terbaru</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th>User</th>
+            <th>Konten</th>
+            <th>Status</th>
+            <th>Waktu</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in komentar_list %}
+          <tr>
+            <td><i class="fa-brands fa-instagram" style="color: #e1306c; font-size: 1.2rem;"></i></td>
+            <td>@{{ item.username|default:"anonim" }}</td>
+            <td>{{ item.comment_text }}</td>
+            <td>
+              {% if item.sentiment == 'POSITIVE' %}
+                <span class="badge" style="background: #d1fae5; color: #065f46; padding: 3px 8px; border-radius: 4px; font-weight: 500;">Positif</span>
+              {% elif item.sentiment == 'NEGATIVE' %}
+                <span class="badge" style="background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 4px; font-weight: 500;">Negatif</span>
+              {% else %}
+                <span class="badge" style="background: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 4px; font-weight: 500;">Netral</span>
+              {% endif %}
+            </td>
+            <td><small class="muted">{{ item.dibuat_pada|date:"d M Y H:i" }}</small></td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--text-gray); padding: 20px;">
+              Belum ada data komentar Instagram yang tersinkronisasi.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Critical Mentions -->
+  <div class="card">
+    <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--red);"></i> Critical Mentions</h2>
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+      {% for item in critical %}
+      <div style="display: flex; gap: 10px; align-items: flex-start; padding-bottom: 10px; border-bottom: 1px solid var(--line);">
+        <i class="fa-brands fa-instagram" style="color: #e1306c; font-size: 1.3rem;"></i>
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 0.85rem;">@{{ item.author|default:item.username }}</div>
+          <div style="font-size: 0.78rem; color: var(--text-gray);">{{ item.text|default:item.comment_text|truncatechars:40 }}</div>
+        </div>
+        <span class="badge badge-negative">Kritis</span>
+      </div>
+      {% empty %}
+      <p class="muted" style="font-size: 0.85rem; text-align: center; margin-top: 20px;">Tidak ada menti kritis saat ini.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Monitoring SLA -->
+  <div class="card">
+    <h2><i class="fa-solid fa-shield-halved" style="color: var(--blue);"></i> Monitoring SLA</h2>
+    <div style="height: 120px; position: relative; display: flex; align-items: center; justify-content: center; margin: 10px 0;">
+      <canvas id="slaChart"></canvas>
+      <div style="position: absolute; text-align: center;">
+        <div style="font-size: 1.3rem; font-weight: 800;">{{ sla_compliance|default:"100" }}%</div>
+      </div>
+    </div>
+    <div style="text-align: center; font-size: 0.85rem; font-weight: 600;">SLA Terpenuhi</div>
+  </div>
+
+</div>
+{% endblock %}
+
+<!-- ==========================================
+     4. JAVASCRIPT UNTUK MEMBUAT GRAFIK CHART.JS
+     ========================================== -->
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // Data dari Django context
+    const posCount = parseInt("{{ positive|default:'0' }}");
+    const neuCount = parseInt("{{ neutral|default:'0' }}");
+    const negCount = parseInt("{{ negative|default:'0' }}");
+    const slaVal = parseInt("{{ sla_compliance|default:'100' }}");
+
+    // 1. Line Chart (Tren Sentimen)
+    const ctxLine = document.getElementById('lineChartTren').getContext('2d');
+    new Chart(ctxLine, {
+      type: 'line',
+      data: {
+        labels: ['Hari Ini'],
+        datasets: [
+          { label: 'Positif', data: [posCount], borderColor: '#22c55e', backgroundColor: 'transparent', tension: 0.4, borderWidth: 2 },
+          { label: 'Netral', data: [neuCount], borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.4, borderWidth: 2 },
+          { label: 'Negatif', data: [negCount], borderColor: '#ff4d4f', backgroundColor: 'transparent', tension: 0.4, borderWidth: 2 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: '#f1f5f9' }, beginAtZero: true }
+        }
+      }
+    });
+
+    // 2. Doughnut Chart (Komposisi Sentimen)
+    const ctxDoughnut = document.getElementById('doughnutChartKomposisi').getContext('2d');
+    new Chart(ctxDoughnut, {
+      type: 'doughnut',
+      data: {
+        labels: ['Positif', 'Netral', 'Negatif'],
+        datasets: [{
+          data: [posCount, neuCount, negCount],
+          backgroundColor: ['#22c55e', '#3b82f6', '#ff4d4f'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '80%',
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // 3. SLA Donut Chart
+    const ctxSLA = document.getElementById('slaChart').getContext('2d');
+    new Chart(ctxSLA, {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [slaVal, 100 - slaVal],
+          backgroundColor: ['#22c55e', '#edf2f7'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '80%',
+        plugins: { legend: { display: false } }
+      }
+    });
+  });
+</script>
+{% endblock %}

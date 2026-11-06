@@ -1,0 +1,21 @@
+{% with ns=request.resolver_match.namespace %}
+<aside class="sidebar">
+  <div class="brand">SENTRA<small>Social Engagement &amp; Sentiment Tracking</small></div>
+  <nav>
+    <a href="{% url 'core:dashboard' %}" class="{% if ns == 'core' %}active{% endif %}">Dashboard</a>
+    {% if user.can_manage_inbox %}
+      <a href="{% url 'inbox:list' %}" class="{% if ns == 'inbox' %}active{% endif %}">Inbox</a>
+    {% endif %}
+    <a href="{% url 'tickets:list' %}" class="{% if ns == 'tickets' %}active{% endif %}">Tiket</a>
+    {% if user.can_view_analytics %}
+      <a href="{% url 'analytics:index' %}" class="{% if ns == 'analytics' %}active{% endif %}">Analitik</a>
+    {% endif %}
+    {% if user.can_manage_inbox %}
+      <a href="{% url 'monitoring:index' %}" class="{% if ns == 'monitoring' %}active{% endif %}">Monitoring</a>
+    {% endif %}
+    {% if user.is_admin_role %}
+      <a href="{% url 'configuration:index' %}" class="{% if ns == 'configuration' %}active{% endif %}">Pengaturan</a>
+    {% endif %}
+     </nav>
+</aside>
+{% endwith %}

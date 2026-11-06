@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Dashboard PIC{% endblock %}
+{% block page_title %}Dashboard PIC{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/pic.css' %}">
+
+<div class="pic-head">
+  <div>
+    <h2>Halo, {{ user.get_full_name|default:user.username }}</h2>
+    <p class="muted">Ringkasan tiket yang menjadi tanggung jawab Anda{% if user.unit %} di {{ user.unit }}{% endif %}.</p>
+  </div>
+  <a class="btn" href="{% url 'tickets:list' %}">Lihat semua tiket &rarr;</a>
+</div>
+
+<div class="pic-stats">
+  <a class="pic-stat blue" href="{% url 'tickets:list' %}">
+    <span class="pic-icon"><svg viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 0 0 6v3h18v-3a2 2 0 0 1 0-6V6H3z"/></svg></span>
+    <span><span class="label">Total Tiket</span><span class="num">{{ s.total }}</span><span class="sub">semua tiket Anda</span></span>
+  </a>
+  <a class="pic-stat red" href="{% url 'tickets:list' %}?status=open">
+    <span class="pic-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+    <span><span class="label">Open</span><span class="num">{{ s.open }}</span><span class="sub">belum ditangani</span></span>
+  </a>
+  <a class="pic-stat orange" href="{% url 'tickets:list' %}?status=in_progress">
+    <span class="pic-icon"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg></span>
+    <span><span class="label">In Progress</span><span class="num">{{ s.in_progress }}</span><span class="sub">+ {{ s.waiting }} menunggu respons</span></span>
+  </a>
+  <a class="pic-stat green" href="{% url 'tickets:list' %}?status=resolved">
+    <span class="pic-icon"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+    <span><span class="label">Resolved</span><span class="num">{{ s.resolved }}</span><span class="sub">tiket selesai</span></span>
+  </a>
+</div>
+
+<div class="pic-row">
+  <div class="card">
+    <div class="pic-card-head">
+      <h2>Perlu Segera Ditangani</h2>
+      <a href="{% url 'tickets:list' %}">Lihat semua &rarr;</a>
+    </div>
+    <div class="table-wrap"><table>
+      <tr><th>ID Tiket</th><th>Judul</th><th>Prioritas</th><th>Status</th><th>Batas SLA</th></tr>
+      {% for t in urgent %}
+      <tr>
+        <td class="pic-nowrap"><a href="{% url 'tickets:detail' t.pk %}">{{ t.code }}</a></td>
+        <td>{{ t.title|truncatechars:50 }}</td>
+        <td><span class="badge badge-{{ t.priority }}">{{ t.get_priority_display }}</span></td>
+        <td><span class="badge badge-{{ t.status }}">{{ t.get_status_display }}</span></td>
+        <td class="{% if t.is_overdue %}pic-late{% endif %}">{{ t.due_at|date:"d M H:i"|default:"-" }}{% if t.is_overdue %} (terlambat){% endif %}</td>
+      </tr>
+      {% empty %}<tr><td colspan="5" class="muted">Tidak ada tiket yang perlu ditangani. Mantap!</td></tr>{% endfor %}
+    </table></div>
+  </div>
+
+  <div class="card">
+    <div class="pic-card-head"><h2>SLA &amp; Prioritas</h2></div>
+    <div class="pic-sla">
+        <div class="pic-donut {% if not has_data %}empty{% endif %}"
+             style="--a: {{ on_pct }}%; --b: {{ near_end }}%;">
+            <div><strong>{{ sla_pct }}%</strong><small>SLA</small></div>
+        </div>
+        <ul class="pic-legend">
+            <li><i class="dot g"></i>Tepat waktu <b>{{ on_time }}</b></li>
+            <li><i class="dot y"></i>Mendekati SLA <b>{{ near }}</b></li>
+            <li><i class="dot r"></i>Terlambat <b>{{ late }}</b></li>
+        </ul>
+    </div>
+    <p class="help">Mendekati SLA = jatuh tempo dalam {{ near_hours }} jam ke depan.</p>
+    <h3 class="pic-sub">Prioritas tiket aktif ({{ open_total }})</h3>
+    {% for p in priority_rows %}
+    <div class="pic-prio">
+        <span>{{ p.label }}</span>
+       <!-- Perbaikan: Gunakan CSS variable untuk menghindari error linter CSS pada nilai % -->
+<span class="bar p-{{ p.key }}">
+    <span style="--w: {{ p.pct }}%; width: var(--w);"></span>
+</span>
+<b>{{ p.count }}</b>
+</div>
+{% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="pic-card-head">
+    <h2>Tiket Terbaru</h2>
+    <a href="{% url 'tickets:list' %}">Pindah ke halaman Tiket &rarr;</a>
+  </div>
+  <div class="table-wrap"><table>
+    <tr><th>ID Tiket</th><th>Judul</th><th>Topik</th><th>Prioritas</th><th>Status</th><th>Diperbarui</th></tr>
+    {% for t in latest %}
+    <tr>
+      <td class="pic-nowrap"><a href="{% url 'tickets:detail' t.pk %}">{{ t.code }}</a></td>
+      <td>{{ t.title|truncatechars:60 }}</td>
+      <td>{{ t.topic|default:"-" }}</td>
+      <td><span class="badge badge-{{ t.priority }}">{{ t.get_priority_display }}</span></td>
+      <td><span class="badge badge-{{ t.status }}">{{ t.get_status_display }}</span></td>
+      <td>{{ t.updated_at|date:"d M H:i" }}</td>
+    </tr>
+    {% empty %}<tr><td colspan="6" class="muted">Belum ada tiket untuk Anda.</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}

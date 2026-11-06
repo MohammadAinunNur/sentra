@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Buat Tiket Baru - SENTRA{% endblock %}
+{% block page_title %}Buat Tiket Baru{% endblock %}
+
+{% block content %}
+<!-- Tombol Kembali ke Manajemen Tiket -->
+<div style="margin-bottom: 16px;">
+  <a href="{% url 'tickets:list' %}" class="muted" style="font-size: 0.88rem; font-weight: 500;">
+    <i class="fa-solid fa-arrow-left"></i> Kembali ke Manajemen Tiket
+  </a>
+</div>
+
+<div class="grid grid-2" style="align-items: start;">
+  <!-- ==========================================
+       1. FORM ISIAN BUAT TIKET
+       ========================================== -->
+  <div class="card">
+    <h2 style="font-size: 1.05rem; margin-bottom: 20px;">
+      <i class="fa-solid fa-ticket" style="color: var(--blue);"></i> Form Tiket Baru
+    </h2>
+
+    <form method="post">
+      {% csrf_token %}
+      
+      {% for field in form %}
+        <div class="form-row">
+          {{ field.label_tag }}
+          {{ field }}
+          
+          {% if field.help_text %}
+            <div class="help" style="margin-top: 4px; font-size: 0.8rem; color: var(--text-gray);">
+              <i class="fa-solid fa-circle-info"></i> {{ field.help_text }}
+            </div>
+          {% endif %}
+          
+          {% if field.errors %}
+            <div class="errorlist" style="color: var(--red); font-size: 0.82rem; margin-top: 4px;">
+              {{ field.errors }}
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <div style="display: flex; gap: 10px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line);">
+        <button type="submit" class="btn" style="font-size: 0.88rem;">
+          <i class="fa-solid fa-paper-plane"></i> Buat Tiket
+        </button>
+        <a class="btn btn-outline" href="{% url 'tickets:list' %}" style="font-size: 0.88rem;">
+          Batal
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- ==========================================
+       2. KARTU REFERENSI KOMENTAR ASLI (JIKA ADA)
+       ========================================== -->
+  {% if mention %}
+  <div class="card">
+    <h2 style="font-size: 1.05rem; margin-bottom: 16px;">
+      <i class="fa-solid fa-comments" style="color: var(--blue);"></i> Komentar Asli
+    </h2>
+
+    <!-- Header Informasi Pengguna & Channel -->
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line);">
+      {% if mention.channel == 'instagram' %}
+        <i class="fa-brands fa-instagram" style="font-size: 1.8rem; color: #e1306c;"></i>
+      {% elif mention.channel == 'youtube' %}
+        <i class="fa-brands fa-youtube" style="font-size: 1.8rem; color: #ff0000;"></i>
+      {% elif mention.channel == 'tiktok' %}
+        <i class="fa-brands fa-tiktok" style="font-size: 1.8rem; color: #000;"></i>
+      {% else %}
+        <i class="fa-brands fa-x-twitter" style="font-size: 1.8rem; color: #000;"></i>
+      {% endif %}
+
+      <div>
+        <div style="font-weight: 700; font-size: 0.9rem; color: var(--text);">{{ mention.author }}</div>
+        <div class="muted" style="font-size: 0.78rem;">{{ mention.get_channel_display }}</div>
+      </div>
+    </div>
+
+    <!-- Kotak Isi Pesan -->
+    <div style="border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: #fafbfc; margin-bottom: 16px;">
+      <p style="font-size: 0.9rem; margin: 0; line-height: 1.5; color: var(--text);">
+        {{ mention.content }}
+      </p>
+    </div>
+
+    <!-- Kotak Saran AI -->
+    {% if mention.ai_recommendation %}
+      <div style="background: #eef6ff; border-radius: 10px; padding: 12px 14px; border: 1px dashed #bcdcff;">
+        <div style="font-weight: 700; font-size: 0.82rem; color: #0056b3; margin-bottom: 4px;">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Saran AI
+        </div>
+        <p style="font-size: 0.82rem; margin: 0; color: #1e4273; line-height: 1.4;">
+          {{ mention.ai_recommendation }}
+        </p>
+      </div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Masuk ke Portal{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block public %}
+<div class="auth-layout">
+
+  <!-- Left Column: Visual Showcase -->
+  {% include "accounts/showcase_panel.html" %}
+
+  <!-- Right Column: Login Form -->
+  <div class="auth-form-panel">
+    <div class="auth-form-panel-inner">
+
+      <!-- Header Tampilan Mobile (Hanya muncul di layar kecil) -->
+      <div class="auth-mobile-header">
+        <div class="auth-mobile-brand">
+          <div class="auth-mobile-brand-icon">
+            <i class="fa-solid fa-chart-pie"></i>
+          </div>
+          <h2 class="auth-mobile-brand-title">SENTRA</h2>
+        </div>
+        <span class="auth-status-pill">
+          <span class="auth-pulse-dot"></span> Online
+        </span>
+      </div>
+
+      <!-- Navigasi Tab Modern (Masuk / Daftar) -->
+      <div class="auth-tabs-nav">
+        <a href="{% url 'accounts:login' %}" class="auth-tab-btn active">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i>
+          <span>Masuk</span>
+        </a>
+        <a href="{% url 'accounts:register' %}" class="auth-tab-btn">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>Daftar Akun</span>
+        </a>
+      </div>
+
+      <!-- Judul & Sambutan -->
+      <div class="auth-heading-wrap">
+        <div class="auth-badge-greeting">
+          <i class="fa-solid fa-fingerprint"></i> Otentikasi Akses
+        </div>
+        <h1 class="auth-title">Selamat Datang Kembali 👋</h1>
+        <p class="auth-subtitle">
+          Silakan masukkan kredensial akun Anda untuk mengakses dashboard analitik sentimen dan penanganan tiket.
+        </p>
+      </div>
+
+
+      <!-- Flash Messages dari Django -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="auth-alert {% if message.tags == 'error' %}auth-alert-error{% elif message.tags == 'success' %}auth-alert-success{% else %}auth-alert-info{% endif %}">
+            <div class="auth-alert-icon">
+              {% if message.tags == 'error' %}
+                <i class="fa-solid fa-circle-exclamation"></i>
+              {% elif message.tags == 'success' %}
+                <i class="fa-solid fa-circle-check"></i>
+              {% else %}
+                <i class="fa-solid fa-circle-info"></i>
+              {% endif %}
+            </div>
+            <div class="auth-alert-content">
+              <p>{{ message }}</p>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Error Form Non-Field -->
+      {% if form.non_field_errors %}
+        <div class="auth-alert auth-alert-error">
+          <div class="auth-alert-icon">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div class="auth-alert-content">
+            {% for error in form.non_field_errors %}
+              <p>{{ error }}</p>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Formulir Login Utama -->
+      <form method="post" action="{% url 'accounts:login' %}" id="loginForm" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <!-- Input Username / Email -->
+        <div class="auth-form-group">
+          <div class="auth-label-wrap">
+            <label for="id_username" class="auth-label">Username atau Email</label>
+          </div>
+          <div class="auth-input-wrapper">
+            <i class="fa-regular fa-user auth-input-icon"></i>
+            {{ form.username }}
+          </div>
+          {% if form.username.errors %}
+            <span class="auth-field-error">
+              <i class="fa-solid fa-circle-exclamation"></i> {{ form.username.errors.0 }}
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- Input Password -->
+        <div class="auth-form-group">
+          <div class="auth-label-wrap">
+            <label for="id_password" class="auth-label">Kata Sandi</label>
+            <a href="#" class="auth-link-subtle" onclick="alert('Untuk mereset kata sandi, silakan hubungi Administrator SENTRA atau IT Support.'); return false;">
+              Lupa kata sandi?
+            </a>
+          </div>
+          <div class="auth-input-wrapper">
+            <i class="fa-solid fa-lock auth-input-icon"></i>
+            {{ form.password }}
+            <button type="button" class="auth-pwd-toggle" id="togglePassword" aria-label="Tampilkan / Sembunyikan Kata Sandi">
+              <i class="fa-regular fa-eye" id="toggleIcon"></i>
+            </button>
+          </div>
+          {% if form.password.errors %}
+            <span class="auth-field-error">
+              <i class="fa-solid fa-circle-exclamation"></i> {{ form.password.errors.0 }}
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- Checkbox Ingat Saya -->
+        <div class="auth-form-group" style="margin-bottom: 24px;">
+          <label class="auth-checkbox-wrap" for="id_remember_me">
+            {{ form.remember_me }}
+            <span class="auth-checkbox-label">Ingat sesi login saya di perangkat ini</span>
+          </label>
+        </div>
+
+        <!-- Tombol Masuk -->
+        <button type="submit" class="auth-submit-btn" id="btnSubmit">
+          <i class="fa-solid fa-arrow-right-to-bracket" id="btnIcon"></i>
+          <span id="btnText">Masuk ke Sistem</span>
+        </button>
+      </form>
+
+      <!-- Footer Pindah ke Registrasi -->
+      <div class="auth-panel-footer">
+        Belum memiliki akun tim? 
+        <a href="{% url 'accounts:register' %}">Daftarkan Akun Baru <i class="fa-solid fa-arrow-right" style="font-size:0.75rem;"></i></a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Toggle Visibility Password
+  const toggleBtn = document.getElementById('togglePassword');
+  const passwordInput = document.getElementById('id_password');
+  const toggleIcon = document.getElementById('toggleIcon');
+
+  if (toggleBtn && passwordInput && toggleIcon) {
+    toggleBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const isPassword = passwordInput.getAttribute('type') === 'password';
+      passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+      toggleIcon.classList.toggle('fa-eye', !isPassword);
+      toggleIcon.classList.toggle('fa-eye-slash', isPassword);
+    });
+  }
+
+  // Loading state saat tombol submit ditekan
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', function() {
+      const btn = document.getElementById('btnSubmit');
+      const btnText = document.getElementById('btnText');
+      const btnIcon = document.getElementById('btnIcon');
+      if (btn && btnText && btnIcon) {
+        btn.disabled = true;
+        btn.style.opacity = '0.85';
+        btnIcon.className = 'fa-solid fa-spinner fa-spin';
+        btnText.textContent = 'Memverifikasi...';
+      }
+    });
+  }
+</script>
+{% endblock %}

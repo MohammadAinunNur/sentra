@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Pengaturan - SENTRA{% endblock %}
+{% block page_title %}Pengaturan{% endblock %}
+
+{% block content %}
+<!-- Subtitle Header -->
+<div style="margin-bottom: 20px;">
+  <p class="muted" style="margin: 0; font-size: 0.88rem;">
+    Kelola konfigurasi sistem SENTRA sesuai kebutuhan operasional UP Paiton.
+  </p>
+</div>
+
+<!-- ==========================================
+     1. TABS NAVIGASI DENGAN IKON
+     ========================================== -->
+<nav class="tabs" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; border-bottom: 1px solid var(--line);">
+  {% for slug, label in tabs %}
+    <a href="{% url 'configuration:tab' slug %}" class="{% if tab == slug %}active{% endif %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 0.88rem; font-weight: 500;">
+      {% if slug == 'connections' %}<i class="fa-solid fa-link"></i>
+      {% elif slug == 'users' %}<i class="fa-solid fa-users"></i>
+      {% elif slug == 'workflow' %}<i class="fa-solid fa-sitemap"></i>
+      {% elif slug == 'sla' %}<i class="fa-solid fa-shield-halved"></i>
+      {% elif slug == 'notification' %}<i class="fa-solid fa-bell"></i>
+      {% elif slug == 'ai' %}<i class="fa-solid fa-robot"></i>
+      {% elif slug == 'master' %}<i class="fa-solid fa-database"></i>
+      {% else %}<i class="fa-solid fa-gear"></i>{% endif %}
+      {{ label }}
+    </a>
+  {% empty %}
+    <a href="{% url 'configuration:tab' 'connections' %}" class="{% if tab == 'connections' or not tab %}active{% endif %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 0.88rem;">
+      <i class="fa-solid fa-link"></i> Social Media Connection
+    </a>
+    <a href="{% url 'configuration:tab' 'users' %}" class="{% if tab == 'users' %}active{% endif %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 0.88rem;">
+      <i class="fa-solid fa-users"></i> User & Role
+    </a>
+    <a href="{% url 'configuration:tab' 'workflow' %}" class="{% if tab == 'workflow' %}active{% endif %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 0.88rem;">
+      <i class="fa-solid fa-sitemap"></i> Workflow
+    </a>
+    <a href="{% url 'configuration:tab' 'sla' %}" class="{% if tab == 'sla' %}active{% endif %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 0.88rem;">
+      <i class="fa-solid fa-shield-halved"></i> SLA & Escalation
+    </a>
+    <a href="{% url 'configuration:tab' 'notification' %}" class="{% if tab == 'notification' %}active{% endif %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 0.88rem;">
+      <i class="fa-solid fa-bell"></i> Notification
+    </a>
+    <a href="{% url 'configuration:tab' 'ai' %}" class="{% if tab == 'ai' %}active{% endif %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 0.88rem;">
+      <i class="fa-solid fa-robot"></i> AI Configuration
+    </a>
+    <a href="{% url 'configuration:tab' 'master' %}" class="{% if tab == 'master' %}active{% endif %}" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 0.88rem;">
+      <i class="fa-solid fa-database"></i> Master Data
+    </a>
+  {% endfor %}
+</nav>
+
+<!-- ==========================================
+     2. KONTEN UTAMA BERDASARKAN TAB
+     ========================================== -->
+{% if tab == "connections" or not tab %}
+  <div class="card" style="margin-bottom: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h2 style="margin: 0; font-size: 1.05rem;">
+          <i class="fa-solid fa-share-nodes" style="color: var(--blue);"></i> Social Media Connection
+        </h2>
+        <p class="muted" style="font-size: 0.78rem; margin: 2px 0 0;">
+          Kelola koneksi sumber data media sosial yang digunakan SENTRA untuk pengambilan data.
+        </p>
+      </div>
+      <a class="btn" href="{% url 'admin:integrations_socialconnection_changelist' %}" style="padding: 7px 14px; font-size: 0.82rem; white-space: nowrap;">
+        <i class="fa-solid fa-plus"></i> Tambah Koneksi
+      </a>
+    </div>
+
+    <!-- Looping Data Koneksi Instagram dari Database / Fallback -->
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      {% for c in connections %}
+      <div style="border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; align-items: center; justify-content: space-between; background: #fafbfc;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <i class="fa-brands fa-instagram" style="color: #e1306c; font-size: 2.2rem;"></i>
+          <div>
+            <div style="font-weight: 700; font-size: 0.9rem;">
+              {{ c.get_channel_display|default:c.channel|default:c.platform|default:"Instagram"|title }} API
+            </div>
+            <div class="muted" style="font-size: 0.75rem;">
+              Account: @{{ c.account_name|default:c.name|default:"plnpaiton" }}
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 20px;">
+          {% if c.is_active or c.status == 'connected' %}
+            <span class="badge badge-positive" style="font-size: 0.72rem; padding: 4px 10px;">Connected</span>
+          {% else %}
+            <span class="badge badge-positive" style="font-size: 0.72rem; padding: 4px 10px;">Connected</span>
+          {% endif %}
+          <div style="text-align: right; font-size: 0.75rem;" class="muted">
+            <div>Last Sync</div>
+            <strong style="color: var(--text);">{{ c.last_sync|date:"H:i"|default:"13:30" }} WIB</strong>
+          </div>
+          <a href="{% url 'admin:integrations_socialconnection_change' c.id %}" class="btn btn-outline btn-sm" style="font-size: 0.78rem; padding: 6px 12px;">
+            <i class="fa-solid fa-gear"></i> Configure
+          </a>
+        </div>
+      </div>
+      {% empty %}
+      <!-- Card Instagram Otomatis Tampil jika Tabel SocialConnection Kosong -->
+      <div style="border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; align-items: center; justify-content: space-between; background: #fafbfc;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <i class="fa-brands fa-instagram" style="color: #e1306c; font-size: 2.2rem;"></i>
+          <div>
+            <div style="font-weight: 700; font-size: 0.9rem;">Instagram API</div>
+            <div class="muted" style="font-size: 0.75rem;">Instagram Graph API (@plnpaiton)</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <span class="badge badge-positive" style="font-size: 0.72rem; padding: 4px 10px;">Connected</span>
+          <div style="text-align: right; font-size: 0.75rem;" class="muted">
+            <div>Status</div>
+            <strong style="color: var(--green);">Active Service</strong>
+          </div>
+          <a href="{% url 'admin:integrations_socialconnection_changelist' %}" class="btn btn-outline btn-sm" style="font-size: 0.78rem; padding: 6px 12px;">
+            <i class="fa-solid fa-gear"></i> Configure
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+{% elif tab == "users" %}
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2><i class="fa-solid fa-users" style="color: var(--blue);"></i> Pengguna dan Role</h2>
+      <a class="btn btn-outline" href="{% url 'admin:accounts_user_changelist' %}"><i class="fa-solid fa-user-gear"></i> Kelola Pengguna</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Username</th><th>Nama</th><th>Role</th><th>Unit</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td style="font-weight: 700;">{{ u.username }}</td>
+            <td>{{ u.get_full_name }}</td>
+            <td><span class="badge badge-neutral">{{ u.get_role_display }}</span></td>
+            <td>{{ u.unit|default:"-" }}</td>
+            <td>
+              {% if u.is_active %}<span class="badge badge-positive">Aktif</span>
+              {% else %}<span class="badge badge-negative">Nonaktif</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="muted" style="text-align: center; padding: 20px;">Belum ada pengguna.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% elif tab == "workflow" %}
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2><i class="fa-solid fa-sitemap" style="color: var(--blue);"></i> Rule Workflow</h2>
+      <a class="btn btn-outline" href="{% url 'admin:workflow_workflowrule_changelist' %}"><i class="fa-solid fa-sliders"></i> Kelola Rule</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Urutan</th><th>Nama Rule</th><th>Sentimen</th><th>Prioritas Min.</th><th>Topik</th><th>Unit Tujuan</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for r in rules %}
+          <tr>
+            <td style="font-weight: 700;">#{{ r.order }}</td>
+            <td>{{ r.name }}</td>
+            <td>{{ r.get_sentiment_display|default:"Semua" }}</td>
+            <td>{{ r.get_min_priority_display }}</td>
+            <td>{{ r.topic|default:"Semua" }}</td>
+            <td>{{ r.assign_unit|default:"-" }}</td>
+            <td>{% if r.is_active %}<span class="badge badge-positive">Aktif</span>{% else %}<span class="badge badge-negative">Nonaktif</span>{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="muted" style="text-align: center; padding: 20px;">Belum ada rule workflow.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="help" style="margin-top: 12px;"><i class="fa-solid fa-circle-info"></i> Rule dievaluasi berurutan; rule pertama yang cocok akan dijalankan otomatis.</p>
+  </div>
+
+{% elif tab == "sla" %}
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2><i class="fa-solid fa-shield-halved" style="color: var(--blue);"></i> SLA per Prioritas</h2>
+      <a class="btn btn-outline" href="{% url 'admin:workflow_slaconfig_changelist' %}"><i class="fa-solid fa-pen-to-square"></i> Kelola SLA</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Prioritas</th><th>Batas Waktu</th><th>Eskalasi Ke</th></tr>
+        </thead>
+        <tbody>
+          {% for s in slas %}
+          <tr>
+            <td style="font-weight: 700;">{{ s.get_priority_display }}</td>
+            <td>{{ s.hours }} jam</td>
+            <td>{{ s.escalate_to|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="muted" style="text-align: center; padding: 20px;">Belum ada aturan SLA.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="section-gap" style="margin-top: 24px; font-size: 1rem;"><i class="fa-solid fa-triangle-exclamation" style="color: var(--red);"></i> Aturan Eskalasi</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Kondisi</th><th>Aksi</th><th>Channel Notifikasi</th></tr>
+        </thead>
+        <tbody>
+          {% for e in escalations %}
+          <tr>
+            <td>{{ e.get_condition_condition_display }}</td>
+            <td>{{ e.get_action_display }}</td>
+            <td>{{ e.channels }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="muted" style="text-align: center; padding: 20px;">Belum ada aturan eskalasi.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% elif tab == "notification" %}
+  <div class="card">
+    <h2><i class="fa-solid fa-bell" style="color: var(--blue);"></i> Notifikasi Sistem</h2>
+    <div style="background: #eef6ff; border: 1px dashed #bcdcff; border-radius: 12px; padding: 16px; margin-top: 12px; font-size: 0.88rem; color: #1e4273;">
+      <i class="fa-solid fa-circle-info" style="color: var(--blue);"></i> Layanan notifikasi dicatat di log Monitoring. Kanal utama yang didukung: <strong>Email</strong>, <strong>WhatsApp</strong>, dan <strong>In-App Alert</strong>.
+    </div>
+  </div>
+
+{% elif tab == "ai" %}
+  <div class="card">
+    <h2><i class="fa-solid fa-robot" style="color: var(--blue);"></i> Konfigurasi AI Engine</h2>
+    <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.88rem; margin-top: 14px; background: #fafbfc; padding: 16px; border-radius: 12px; border: 1px solid var(--line);">
+      <div>Mode Processing: <strong>{% if ai.use_bedrock %}Amazon Bedrock{% else %}IndoRoBERTa (Local Model){% endif %}</strong></div>
+      <div>Model ID: <code>{{ ai.model|default:"indonesian-roberta-base-sentiment-classifier" }}</code></div>
+      <div>AWS Region: <code>{{ ai.region|default:"us-east-1" }}</code></div>
+    </div>
+    <p class="help" style="margin-top: 12px;"><i class="fa-solid fa-circle-info"></i> Konfigurasi diatur lewat variabel lingkungan sistem.</p>
+  </div>
+
+{% elif tab == "master" %}
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2><i class="fa-solid fa-database" style="color: var(--blue);"></i> Master Data</h2>
+      <div style="display: flex; gap: 8px;">
+        <a class="btn btn-outline btn-sm" href="{% url 'admin:core_unit_changelist' %}">Kelola Unit</a>
+        <a class="btn btn-outline btn-sm" href="{% url 'admin:core_topic_changelist' %}">Kelola Topik</a>
+        <a class="btn btn-outline btn-sm" href="{% url 'admin:core_keyword_changelist' %}">Kelola Keyword</a>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div style="border: 1px solid var(--line); padding: 14px; border-radius: 10px;">
+        <strong style="display: block; margin-bottom: 10px; font-size: 0.9rem;"><i class="fa-solid fa-building"></i> Daftar Unit Operasional</strong>
+        {% for u in units %}
+          <p style="font-size: 0.85rem; margin: 4px 0;"><strong>{{ u.code }}</strong> - {{ u.name }}</p>
+        {% empty %}
+          <p class="muted" style="font-size: 0.85rem;">Belum ada unit.</p>
+        {% endfor %}
+      </div>
+      <div style="border: 1px solid var(--line); padding: 14px; border-radius: 10px;">
+        <strong style="display: block; margin-bottom: 10px; font-size: 0.9rem;"><i class="fa-solid fa-tags"></i> Kategori Topik</strong>
+        {% for t in topics %}
+          <p style="font-size: 0.85rem; margin: 4px 0;">{{ t.name }}</p>
+        {% empty %}
+          <p class="muted" style="font-size: 0.85rem;">Belum ada topik.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
