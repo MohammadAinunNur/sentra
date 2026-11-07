@@ -131,6 +131,10 @@ if IS_VERCEL:
         db_host = parts[0]
         db_port = parts[1]
 
+    # Koreksi otomatis: Port 27430 pada Aiven MySQL adalah X-Protocol, port SQL standarnya adalah 27426
+    if str(db_port) == '27430':
+        db_port = '27426'
+
     if not db_host or db_host in ('127.0.0.1', 'localhost'):
         print(f"[SENTRA WARNING] DB_HOST belum diatur dengan benar di Vercel: host='{db_host}', port='{db_port}'")
 
