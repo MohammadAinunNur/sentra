@@ -5,3 +5,5 @@ __pycache__/
 _backup_tahap8/
 media/
 *.sql
+*.log
+import_database.py

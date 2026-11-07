@@ -34,18 +34,168 @@
           <p class="muted" style="margin: 0; font-size: 0.85rem;">Ringkasan sentimen dan engagement media sosial secara real-time</p>
         </div>
         
-        <div style="display: flex; align-items: center; gap: 16px;">
-          <!-- Filter Tanggal Topbar -->
-          <div class="date-filter" style="display: flex; align-items: center; gap: 8px; background: #fff; padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.85rem;">
-            <i class="fa-regular fa-calendar muted"></i>
-            <span>1 Jun 2026 - 30 Jun 2026</span>
-            <i class="fa-solid fa-chevron-down muted" style="font-size: 0.7rem;"></i>
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <!-- Filter Tanggal & Komentar Topbar -->
+          <div class="dropdown-wrapper" id="dateFilterWrapper" style="position: relative;">
+            <button type="button" id="dateFilterBtn" class="topbar-dropdown-btn" title="Klik untuk memfilter tanggal & mencari komentar">
+              <i class="fa-regular fa-calendar-days" style="color: var(--blue);"></i>
+              <span id="dateFilterLabel" style="font-weight: 500; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {% if filter_label %}{{ filter_label }}{% elif nav_start_date %}{{ nav_start_date }} - {{ nav_end_date }}{% else %}Filter Tanggal &amp; Komentar{% endif %}
+              </span>
+              <i class="fa-solid fa-chevron-down muted" style="font-size: 0.7rem;"></i>
+            </button>
+
+            <!-- Popover Dropdown Filter -->
+            <div id="dateFilterMenu" class="topbar-popover" style="display: none; width: 330px; right: 0;">
+              <div class="popover-header">
+                <div>
+                  <h4 style="margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--text);">Filter Komentar &amp; Tanggal</h4>
+                  <small class="muted" style="font-size: 0.72rem;">Saring analitik dan pencarian komentar</small>
+                </div>
+                <button type="button" class="popover-close-btn" id="closeDateFilterBtn">&times;</button>
+              </div>
+
+              <form method="get" action="{% url 'core:dashboard' %}" id="dateFilterForm" style="padding: 14px 16px;">
+                <!-- Pencarian Kata Kunci Komentar -->
+                <div style="margin-bottom: 12px;">
+                  <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 5px;">
+                    Cari Komentar / User
+                  </label>
+                  <div style="position: relative;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-gray); font-size: 0.8rem;"></i>
+                    <input type="text" name="q" id="filterInputQ" value="{{ q|default:nav_q }}" placeholder="Ketik kata kunci atau @user..." style="width: 100%; padding: 7px 10px 7px 32px; font-size: 0.82rem; border-radius: 8px;">
+                  </div>
+                </div>
+
+                <!-- Pilihan Cepat Periode -->
+                <div style="margin-bottom: 12px;">
+                  <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">
+                    Periode Tanggal
+                  </label>
+                  <div class="preset-grid">
+                    <button type="button" class="preset-pill {% if period == 'all' or nav_period == 'all' and not nav_start_date and not start_date %}active{% endif %}" data-preset="all">Semua Waktu</button>
+                    <button type="button" class="preset-pill {% if period == 'today' or nav_period == 'today' %}active{% endif %}" data-preset="today">Hari Ini</button>
+                    <button type="button" class="preset-pill {% if period == '7d' or nav_period == '7d' %}active{% endif %}" data-preset="7d">7 Hari Terakhir</button>
+                    <button type="button" class="preset-pill {% if period == '30d' or nav_period == '30d' %}active{% endif %}" data-preset="30d">30 Hari Terakhir</button>
+                    <button type="button" class="preset-pill {% if period == 'this_month' or nav_period == 'this_month' %}active{% endif %}" data-preset="this_month">Bulan Ini</button>
+                    <button type="button" class="preset-pill {% if period == 'custom' or nav_period == 'custom' or start_date or nav_start_date %}active{% endif %}" data-preset="custom">Kustom Tanggal</button>
+                  </div>
+                  <input type="hidden" name="period" id="filterPeriodInput" value="{{ period|default:nav_period|default:'all' }}">
+                </div>
+
+                <!-- Rentang Tanggal Kustom -->
+                <div id="customDateRangeBox" style="margin-bottom: 14px; {% if period and period != 'custom' and not start_date and not nav_start_date %}display: none;{% endif %}">
+                  <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 5px;">
+                    Pilih Rentang Tanggal
+                  </label>
+                  <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center;">
+                    <div>
+                      <small class="muted" style="font-size: 0.68rem; display: block; margin-bottom: 2px;">Dari Tanggal:</small>
+                      <input type="date" name="start_date" id="filterStartDate" value="{{ start_date|default:nav_start_date }}" style="width: 100%; font-size: 0.78rem; padding: 6px 8px; border-radius: 6px;">
+                    </div>
+                    <span style="color: var(--text-gray); padding-top: 14px;">-</span>
+                    <div>
+                      <small class="muted" style="font-size: 0.68rem; display: block; margin-bottom: 2px;">Sampai Tanggal:</small>
+                      <input type="date" name="end_date" id="filterEndDate" value="{{ end_date|default:nav_end_date }}" style="width: 100%; font-size: 0.78rem; padding: 6px 8px; border-radius: 6px;">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Aksi Bawah -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 10px;">
+                  <a href="{% url 'core:dashboard' %}" class="btn btn-outline btn-sm" style="font-size: 0.78rem; padding: 5px 10px;">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                  </a>
+                  <button type="submit" class="btn btn-sm" style="font-size: 0.78rem; padding: 6px 14px;">
+                    <i class="fa-solid fa-filter" style="margin-right: 4px;"></i> Terapkan
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
 
-          <!-- Lonceng Notifikasi -->
-          <div style="position: relative; cursor: pointer;">
-            <i class="fa-regular fa-bell" style="font-size: 1.2rem; color: var(--text-gray);"></i>
-            <span style="position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: var(--red); border-radius: 50%;"></span>
+          <!-- Lonceng Notifikasi Interaktif -->
+          <div class="dropdown-wrapper" id="notifWrapper" style="position: relative;">
+            <button type="button" id="notifBellBtn" class="notif-btn" title="Notifikasi" aria-label="Notifikasi">
+              <i class="fa-regular fa-bell" style="font-size: 1.25rem; color: var(--text-gray);"></i>
+              {% if notif_count > 0 %}
+              <span class="notif-badge" id="notifBadge">{{ notif_count }}</span>
+              {% endif %}
+            </button>
+
+            <!-- Popover Menu Notifikasi -->
+            <div id="notifMenu" class="topbar-popover" style="display: none; width: 350px; right: 0;">
+              <div class="popover-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <h4 style="margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--text);">Notifikasi</h4>
+                  {% if notif_count > 0 %}
+                  <span class="badge badge-negative" style="font-size: 0.68rem; padding: 2px 7px;">{{ notif_count }} Baru</span>
+                  {% endif %}
+                </div>
+                <button type="button" class="popover-close-btn" id="closeNotifBtn">&times;</button>
+              </div>
+
+              <!-- List Notifikasi -->
+              <div class="notif-list" style="max-height: 360px; overflow-y: auto;">
+                {% if notif_open_tickets or notif_critical_comments %}
+                  
+                  <!-- Tiket Butuh Penanganan -->
+                  {% for t in notif_open_tickets %}
+                  <a href="{% url 'tickets:detail' t.id %}" class="notif-item">
+                    <div class="notif-icon-circle ticket">
+                      <i class="fa-solid fa-ticket"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 700; font-size: 0.82rem; color: var(--text);">Tiket {{ t.code|default:"#" }}</span>
+                        <span class="badge {% if t.priority == 'high' or t.priority == 'critical' %}badge-critical{% else %}badge-medium{% endif %}" style="font-size: 0.68rem; padding: 2px 6px;">
+                          {{ t.get_priority_display }}
+                        </span>
+                      </div>
+                      <div class="notif-text">{{ t.title|truncatechars:45 }}</div>
+                      <small class="muted" style="font-size: 0.72rem;"><i class="fa-regular fa-clock"></i> {{ t.created_at|timesince }} yang lalu</small>
+                    </div>
+                  </a>
+                  {% endfor %}
+
+                  <!-- Komentar Negatif Terbaru -->
+                  {% for c in notif_critical_comments %}
+                  <a href="{% url 'inbox:list' %}?sentiment=NEGATIVE" class="notif-item">
+                    <div class="notif-icon-circle negative">
+                      <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 700; font-size: 0.82rem; color: var(--red);">Komentar Negatif</span>
+                        <span class="badge badge-negative" style="font-size: 0.68rem; padding: 2px 6px;">Negatif</span>
+                      </div>
+                      <div class="notif-text"><strong>@{{ c.username|default:"anonim" }}:</strong> {{ c.comment_text|truncatechars:42 }}</div>
+                      <small class="muted" style="font-size: 0.72rem;"><i class="fa-regular fa-clock"></i> {{ c.dibuat_pada|timesince }} yang lalu</small>
+                    </div>
+                  </a>
+                  {% endfor %}
+
+                {% else %}
+                  <div style="padding: 28px 16px; text-align: center;">
+                    <div style="width: 44px; height: 44px; border-radius: 50%; background: #e6f9f3; color: var(--green); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.2rem;">
+                      <i class="fa-solid fa-check"></i>
+                    </div>
+                    <div style="font-weight: 600; font-size: 0.88rem; color: var(--text);">Semua Terkendali!</div>
+                    <p class="muted" style="font-size: 0.78rem; margin: 4px 0 0;">Tidak ada tiket mendesak atau komentar negatif baru saat ini.</p>
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- Footer Notifikasi -->
+              <div class="popover-footer" style="padding: 10px 14px; background: #fafbfc; border-top: 1px solid var(--line); display: flex; justify-content: space-between;">
+                <a href="{% url 'inbox:list' %}" style="font-size: 0.78rem; font-weight: 600; color: var(--blue);">
+                  Buka Inbox <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i>
+                </a>
+                <a href="{% url 'tickets:list' %}" style="font-size: 0.78rem; font-weight: 600; color: var(--text-gray);">
+                  Lihat Tiket <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i>
+                </a>
+              </div>
+            </div>
           </div>
 
           <!-- User Info Profil -->
@@ -75,6 +225,102 @@
 
   <!-- Library Chart.js untuk Grafik -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const dateFilterBtn = document.getElementById("dateFilterBtn");
+      const dateFilterMenu = document.getElementById("dateFilterMenu");
+      const closeDateFilterBtn = document.getElementById("closeDateFilterBtn");
+      const notifBellBtn = document.getElementById("notifBellBtn");
+      const notifMenu = document.getElementById("notifMenu");
+      const closeNotifBtn = document.getElementById("closeNotifBtn");
+      const presetButtons = document.querySelectorAll(".preset-pill");
+      const periodInput = document.getElementById("filterPeriodInput");
+      const customDateBox = document.getElementById("customDateRangeBox");
+      const startDateInput = document.getElementById("filterStartDate");
+      const endDateInput = document.getElementById("filterEndDate");
+      const filterForm = document.getElementById("dateFilterForm");
+
+      function toggleDateFilter(forceClose) {
+        if (!dateFilterMenu) return;
+        if (forceClose || dateFilterMenu.style.display === "block") {
+          dateFilterMenu.style.display = "none";
+        } else {
+          dateFilterMenu.style.display = "block";
+          if (notifMenu) notifMenu.style.display = "none";
+        }
+      }
+
+      function toggleNotif(forceClose) {
+        if (!notifMenu) return;
+        if (forceClose || notifMenu.style.display === "block") {
+          notifMenu.style.display = "none";
+        } else {
+          notifMenu.style.display = "block";
+          if (dateFilterMenu) dateFilterMenu.style.display = "none";
+        }
+      }
+
+      if (dateFilterBtn) {
+        dateFilterBtn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          toggleDateFilter();
+        });
+      }
+
+      if (closeDateFilterBtn) {
+        closeDateFilterBtn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          toggleDateFilter(true);
+        });
+      }
+
+      if (notifBellBtn) {
+        notifBellBtn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          toggleNotif();
+        });
+      }
+
+      if (closeNotifBtn) {
+        closeNotifBtn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          toggleNotif(true);
+        });
+      }
+
+      // Tutup menu jika klik di luar popover
+      document.addEventListener("click", function(e) {
+        if (dateFilterMenu && !dateFilterMenu.contains(e.target) && (!dateFilterBtn || !dateFilterBtn.contains(e.target))) {
+          dateFilterMenu.style.display = "none";
+        }
+        if (notifMenu && !notifMenu.contains(e.target) && (!notifBellBtn || !notifBellBtn.contains(e.target))) {
+          notifMenu.style.display = "none";
+        }
+      });
+
+      // Handler untuk preset pill periode
+      presetButtons.forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+          e.preventDefault();
+          const preset = this.getAttribute("data-preset");
+          presetButtons.forEach(function(b) { b.classList.remove("active"); });
+          this.classList.add("active");
+          if (periodInput) periodInput.value = preset;
+
+          if (preset === "custom") {
+            if (customDateBox) customDateBox.style.display = "block";
+            if (startDateInput) startDateInput.focus();
+          } else {
+            if (customDateBox) customDateBox.style.display = "none";
+            if (startDateInput) startDateInput.value = "";
+            if (endDateInput) endDateInput.value = "";
+            if (filterForm) filterForm.submit();
+          }
+        });
+      });
+    });
+  </script>
   
   {% block extra_js %}{% endblock %}
 

@@ -6,6 +6,21 @@
 
 {% block content %}
 <!-- ==========================================
+     0. FILTER INDICATOR BANNER
+     ========================================== -->
+{% if has_filter %}
+<div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 12px; padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+  <div style="display: flex; align-items: center; gap: 10px; color: #3730a3; font-size: 0.88rem;">
+    <i class="fa-solid fa-filter" style="font-size: 1rem; color: var(--blue);"></i>
+    <span>Filter Aktif: <strong>{{ filter_label }}</strong> &bull; Ditemukan <strong>{{ total }}</strong> komentar</span>
+  </div>
+  <a href="{% url 'core:dashboard' %}" class="btn btn-outline btn-sm" style="font-size: 0.78rem; padding: 4px 10px; background: #fff;">
+    <i class="fa-solid fa-rotate-left"></i> Reset Filter
+  </a>
+</div>
+{% endif %}
+
+<!-- ==========================================
      1. STAT CARDS TOP ROW
      ========================================== -->
 <div class="grid grid-4" style="margin-bottom: 20px;">
@@ -118,8 +133,18 @@
   
   <!-- Tabel Mentions Terbaru -->
   <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
       <h2><i class="fa-solid fa-comments" style="color: var(--blue);"></i> Mentions Terbaru</h2>
+      <form method="get" action="{% url 'core:dashboard' %}" style="display: flex; gap: 6px; align-items: center;">
+        {% if period %}<input type="hidden" name="period" value="{{ period }}">{% endif %}
+        {% if start_date %}<input type="hidden" name="start_date" value="{{ start_date }}">{% endif %}
+        {% if end_date %}<input type="hidden" name="end_date" value="{{ end_date }}">{% endif %}
+        <div style="position: relative;">
+          <input type="text" name="q" value="{{ q|default:'' }}" placeholder="Cari isi komentar / @user..." style="padding: 5px 8px 5px 26px; font-size: 0.78rem; border-radius: 6px; width: 180px;">
+          <i class="fa-solid fa-search" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--text-gray);"></i>
+        </div>
+        <button type="submit" class="btn btn-sm" style="padding: 5px 10px; font-size: 0.78rem;">Cari</button>
+      </form>
     </div>
     <div class="table-wrap">
       <table>
@@ -151,8 +176,12 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5" style="text-align: center; color: var(--text-gray); padding: 20px;">
-              Belum ada data komentar Instagram yang tersinkronisasi.
+            <td colspan="5" style="text-align: center; color: var(--text-gray); padding: 28px 16px;">
+              <i class="fa-regular fa-comment-dots" style="font-size: 2rem; display: block; margin-bottom: 8px; opacity: 0.4;"></i>
+              Tidak ada komentar yang cocok dengan pencarian atau filter tanggal yang dipilih.<br>
+              <a href="{% url 'core:dashboard' %}" class="btn btn-outline btn-sm" style="margin-top: 10px; font-size: 0.78rem;">
+                <i class="fa-solid fa-rotate-left"></i> Reset Filter
+              </a>
             </td>
           </tr>
           {% endfor %}
@@ -208,24 +237,45 @@
     const slaVal = parseInt("{{ sla_compliance|default:'100' }}");
 
     // 1. Line Chart (Tren Sentimen)
+    let trendLabels = ['Total'];
+    let trendPos = [posCount];
+    let trendNeu = [neuCount];
+    let trendNeg = [negCount];
+
+    try {
+      trendLabels = JSON.parse('{{ trend_labels|escapejs }}');
+      trendPos = JSON.parse('{{ trend_positive|escapejs }}');
+      trendNeu = JSON.parse('{{ trend_neutral|escapejs }}');
+      trendNeg = JSON.parse('{{ trend_negative|escapejs }}');
+    } catch (e) {
+      console.warn("Could not parse trend data:", e);
+    }
+
     const ctxLine = document.getElementById('lineChartTren').getContext('2d');
     new Chart(ctxLine, {
       type: 'line',
       data: {
-        labels: ['Hari Ini'],
+        labels: trendLabels,
         datasets: [
-          { label: 'Positif', data: [posCount], borderColor: '#22c55e', backgroundColor: 'transparent', tension: 0.4, borderWidth: 2 },
-          { label: 'Netral', data: [neuCount], borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.4, borderWidth: 2 },
-          { label: 'Negatif', data: [negCount], borderColor: '#ff4d4f', backgroundColor: 'transparent', tension: 0.4, borderWidth: 2 }
+          { label: 'Positif', data: trendPos, borderColor: '#22c55e', backgroundColor: 'rgba(34, 197, 94, 0.08)', fill: true, tension: 0.35, borderWidth: 2 },
+          { label: 'Netral', data: trendNeu, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.08)', fill: true, tension: 0.35, borderWidth: 2 },
+          { label: 'Negatif', data: trendNeg, borderColor: '#ff4d4f', backgroundColor: 'rgba(255, 77, 79, 0.08)', fill: true, tension: 0.35, borderWidth: 2 }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            align: 'end',
+            labels: { boxWidth: 8, font: { size: 10 } }
+          }
+        },
         scales: {
           x: { grid: { display: false } },
-          y: { grid: { color: '#f1f5f9' }, beginAtZero: true }
+          y: { grid: { color: '#f1f5f9' }, beginAtZero: true, ticks: { precision: 0 } }
         }
       }
     });
