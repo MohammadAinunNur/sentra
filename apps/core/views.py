@@ -1,9 +1,8 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
-from django.db.models.functions import TruncDate
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
@@ -11,6 +10,13 @@ from apps.core.models import Komentar, Topic
 from apps.tickets.models import Ticket
 
 from .utils import pct
+
+
+def make_dt_aware(dt):
+    """Pastikan objek datetime memiliki info timezone yang sesuai settings Django."""
+    if timezone.is_naive(dt):
+        return timezone.make_aware(dt)
+    return dt
 
 
 @login_required
@@ -33,52 +39,56 @@ def dashboard(request):
     # QuerySet dasar
     komentar_qs = Komentar.objects.all()
 
-    # Logika filter tanggal
+    # Logika filter tanggal menggunakan datetime langsung (menghindari issue MySQL CONVERT_TZ jika timezone tables belum di-load)
     filter_label = ""
-    start_date_obj = None
-    end_date_obj = None
 
     if period == "today":
-        komentar_qs = komentar_qs.filter(dibuat_pada__date=today)
+        start_dt = make_dt_aware(datetime.combine(today, time.min))
+        end_dt = make_dt_aware(datetime.combine(today, time.max))
+        komentar_qs = komentar_qs.filter(dibuat_pada__gte=start_dt, dibuat_pada__lte=end_dt)
         filter_label = "Hari Ini"
     elif period == "7d":
-        start_date_obj = today - timedelta(days=7)
-        komentar_qs = komentar_qs.filter(dibuat_pada__date__gte=start_date_obj)
+        start_dt = make_dt_aware(datetime.combine(today - timedelta(days=7), time.min))
+        komentar_qs = komentar_qs.filter(dibuat_pada__gte=start_dt)
         filter_label = "7 Hari Terakhir"
     elif period == "30d":
-        start_date_obj = today - timedelta(days=30)
-        komentar_qs = komentar_qs.filter(dibuat_pada__date__gte=start_date_obj)
+        start_dt = make_dt_aware(datetime.combine(today - timedelta(days=30), time.min))
+        komentar_qs = komentar_qs.filter(dibuat_pada__gte=start_dt)
         filter_label = "30 Hari Terakhir"
     elif period == "this_month":
-        komentar_qs = komentar_qs.filter(
-            dibuat_pada__year=now.year, dibuat_pada__month=now.month
-        )
+        start_of_month = today.replace(day=1)
+        start_dt = make_dt_aware(datetime.combine(start_of_month, time.min))
+        komentar_qs = komentar_qs.filter(dibuat_pada__gte=start_dt)
         filter_label = "Bulan Ini"
     elif period == "all":
         filter_label = "Semua Waktu"
     else:
         # Filter berdasarkan input manual tanggal mulai dan tanggal selesai
+        s_date = None
+        e_date = None
         if start_date_str:
             try:
-                start_date_obj = datetime.strptime(start_date_str, "%Y-%m-%d").date()
-                komentar_qs = komentar_qs.filter(dibuat_pada__date__gte=start_date_obj)
+                s_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                start_dt = make_dt_aware(datetime.combine(s_date, time.min))
+                komentar_qs = komentar_qs.filter(dibuat_pada__gte=start_dt)
             except ValueError:
                 start_date_str = ""
         if end_date_str:
             try:
-                end_date_obj = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-                komentar_qs = komentar_qs.filter(dibuat_pada__date__lte=end_date_obj)
+                e_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+                end_dt = make_dt_aware(datetime.combine(e_date, time.max))
+                komentar_qs = komentar_qs.filter(dibuat_pada__lte=end_dt)
             except ValueError:
                 end_date_str = ""
 
-        if start_date_str and end_date_str:
+        if s_date and e_date:
             filter_label = (
-                f"{start_date_obj.strftime('%d %b %Y')} - {end_date_obj.strftime('%d %b %Y')}"
+                f"{s_date.strftime('%d %b %Y')} - {e_date.strftime('%d %b %Y')}"
             )
-        elif start_date_str:
-            filter_label = f"Mulai {start_date_obj.strftime('%d %b %Y')}"
-        elif end_date_str:
-            filter_label = f"Sampai {end_date_obj.strftime('%d %b %Y')}"
+        elif s_date:
+            filter_label = f"Mulai {s_date.strftime('%d %b %Y')}"
+        elif e_date:
+            filter_label = f"Sampai {e_date.strftime('%d %b %Y')}"
         else:
             filter_label = "Semua Waktu"
 
@@ -117,8 +127,8 @@ def dashboard(request):
     escalated = tickets.filter(escalated=True).count()
     sla_compliance = 100 - pct(escalated, total_tickets) if total_tickets else 100
 
-    # 4. Ambil daftar komentar untuk tabel Mentions Terbaru
-    komentar_list = komentar_qs.order_by("-dibuat_pada")[:25]
+    # 4. Ambil daftar komentar untuk tabel Mentions Terbaru (tampilkan hingga 50 data terbaru)
+    komentar_list = komentar_qs.order_by("-dibuat_pada")[:50]
 
     # 5. Komentar kritis negatif
     critical_comments = komentar_qs.filter(sentiment="NEGATIVE").order_by("-dibuat_pada")[:5]
@@ -139,22 +149,19 @@ def dashboard(request):
     topics_list.sort(key=lambda x: x["count"], reverse=True)
 
     # 7. Data Tren Sentimen Harian untuk Chart.js (Line Chart)
-    trend_qs = (
-        komentar_qs.annotate(date=TruncDate("dibuat_pada"))
-        .values("date", "sentiment")
-        .annotate(count=Count("id"))
-        .order_by("date")
-    )
-
+    # Dikelompokkan via Python agar terbebas dari dependensi fungsi SQL CONVERT_TZ
+    trend_comments = komentar_qs.values("dibuat_pada", "sentiment").order_by("dibuat_pada")
     dates_map = {}
-    for item in trend_qs:
-        d_val = item["date"]
-        d_str = d_val.strftime("%d %b") if d_val else ""
-        if not d_str:
+    for item in trend_comments:
+        d_val = item.get("dibuat_pada")
+        if not d_val:
             continue
+        d_str = d_val.strftime("%d %b")
         if d_str not in dates_map:
             dates_map[d_str] = {"POSITIVE": 0, "NEUTRAL": 0, "NEGATIVE": 0}
-        dates_map[d_str][item["sentiment"]] = item["count"]
+        sent = item.get("sentiment")
+        if sent in dates_map[d_str]:
+            dates_map[d_str][sent] += 1
 
     if dates_map:
         trend_labels = list(dates_map.keys())
