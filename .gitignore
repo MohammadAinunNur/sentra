@@ -4,3 +4,4 @@ env/
 __pycache__/
 _backup_tahap8/
 media/
+*.sql

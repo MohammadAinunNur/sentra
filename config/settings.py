@@ -100,7 +100,7 @@ IS_VERCEL = os.environ.get("VERCEL", "0") == "1"
 
 if IS_VERCEL:
     db_host = os.environ.get('DB_HOST', '')
-    db_port = os.environ.get('DB_PORT', '27430')
+    db_port = os.environ.get('DB_PORT', '27426')
     db_name = os.environ.get('DB_NAME', 'defaultdb')
     db_user = os.environ.get('DB_USER', 'avnadmin')
     db_password = os.environ.get('DB_PASSWORD', '')
