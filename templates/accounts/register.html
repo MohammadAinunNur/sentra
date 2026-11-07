@@ -200,21 +200,6 @@
           {% endif %}
         </div>
 
-        <!-- Unit Kerja -->
-        <div class="auth-form-group">
-          <div class="auth-label-wrap">
-            <label for="id_reg_unit" class="auth-label">Unit Kerja Penugasan (Opsional)</label>
-          </div>
-          <div class="auth-input-wrapper">
-            <i class="fa-regular fa-building auth-input-icon"></i>
-            {{ form.unit }}
-          </div>
-          {% if form.unit.errors %}
-            <span class="auth-field-error">
-              <i class="fa-solid fa-circle-exclamation"></i> {{ form.unit.errors.0 }}
-            </span>
-          {% endif %}
-        </div>
 
         <!-- Baris Kata Sandi & Konfirmasi -->
         <div class="auth-row-2col">

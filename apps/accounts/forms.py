@@ -125,16 +125,6 @@ class RegistrationForm(forms.ModelForm):
         initial=User.Role.TEKNISI,
         widget=forms.RadioSelect(attrs={"class": "role-radio-hidden"})
     )
-    unit = forms.ModelChoiceField(
-        label="Unit Kerja (Opsional)",
-        queryset=Unit.objects.all(),
-        required=False,
-        empty_label="-- Pilih Unit Kerja Terkait --",
-        widget=forms.Select(attrs={
-            "class": "auth-select",
-            "id": "id_reg_unit"
-        })
-    )
     password = forms.CharField(
         label="Kata Sandi",
         min_length=8,
@@ -166,7 +156,7 @@ class RegistrationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["username", "email", "phone", "role", "unit"]
+        fields = ["username", "email", "phone", "role"]
 
     def clean_username(self):
         username = self.cleaned_data.get("username", "").strip()
