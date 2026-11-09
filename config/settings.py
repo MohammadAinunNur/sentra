@@ -99,7 +99,9 @@ import urllib.parse
 
 IS_VERCEL = os.environ.get("VERCEL", "0") == "1"
 
-if IS_VERCEL:
+USE_CLOUD_DB = IS_VERCEL or bool(os.environ.get('DB_HOST')) or bool(os.environ.get('DATABASE_URL'))
+
+if USE_CLOUD_DB:
     db_host = os.environ.get('DB_HOST', '')
     db_port = os.environ.get('DB_PORT', '27426')
     db_name = os.environ.get('DB_NAME', 'defaultdb')

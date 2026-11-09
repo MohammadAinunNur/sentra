@@ -21,6 +21,21 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR("Library transformers belum terpasang. Jalankan 'pip install transformers torch' untuk menggunakan fitur ini secara lokal."))
             return
 
+        # Cek koneksi database terlebih dahulu sebelum menjalankan proses AI
+        from django.db import connection
+        try:
+            connection.ensure_connection()
+            db_target = f"{connection.settings_dict.get('HOST') or 'localhost'}:{connection.settings_dict.get('PORT')}"
+            self.stdout.write(self.style.SUCCESS(f"Terhubung ke database: {db_target} (DB: {connection.settings_dict.get('NAME')})"))
+        except Exception as conn_err:
+            self.stdout.write(self.style.ERROR(
+                f"\n[GAGAL KONEKSI DATABASE] Tidak dapat terhubung ke MySQL: {conn_err}\n"
+                f"Penyebab & Solusi:\n"
+                f"1. Jika menggunakan MySQL lokal (XAMPP): Buka XAMPP Control Panel dan klik START pada MySQL.\n"
+                f"2. Jika ingin menyimpan ke Cloud (Aiven): Pastikan DB_HOST, DB_PORT, DB_USER, DB_PASSWORD sudah diatur di file .env.\n"
+            ))
+            return
+
         self.stdout.write("Memuat model AI dari Hugging Face (Mohon tunggu sebentar)...")
         
         # Menggunakan model bert-base-multilingual-uncased-sentiment yang stabil dan mendukung bahasa Indonesia
