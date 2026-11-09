@@ -26,6 +26,11 @@ def inbox_list(request):
     total_neutral = Komentar.objects.filter(sentiment='NEUTRAL').count()
     total_negative = Komentar.objects.filter(sentiment='NEGATIVE').count()
 
+    # Siapkan querystring agar filter dropdown tetap aktif saat pindah halaman (pagination)
+    params = request.GET.copy()
+    params.pop('page', None)
+    querystring = params.urlencode()
+
     # Konfigurasi Paginator (10 data per halaman)
     paginator = Paginator(komentar_qs, 10)
     page_number = request.GET.get('page')
@@ -43,6 +48,7 @@ def inbox_list(request):
 
     context = {
         'page': page_obj,
+        'querystring': querystring,
         'total_all': total_all,
         'total_ig': total_ig,
         'total_positive': total_positive,

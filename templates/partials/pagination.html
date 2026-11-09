@@ -1,7 +1,15 @@
 {% if page.paginator.num_pages > 1 %}
-<div class="pagination">
-  {% if page.has_previous %}<a href="?{{ querystring }}&page={{ page.previous_page_number }}">Sebelumnya</a>{% endif %}
+<div class="pagination" style="display: flex; align-items: center; gap: 10px; font-size: 0.85rem; margin-top: 14px;">
+  {% if page.has_previous %}
+    <a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.previous_page_number }}" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.8rem;">
+      <i class="fa-solid fa-chevron-left" style="font-size: 0.72rem; margin-right: 4px;"></i> Sebelumnya
+    </a>
+  {% endif %}
   <span class="muted">Halaman {{ page.number }} dari {{ page.paginator.num_pages }}</span>
-  {% if page.has_next %}<a href="?{{ querystring }}&page={{ page.next_page_number }}">Berikutnya</a>{% endif %}
+  {% if page.has_next %}
+    <a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.next_page_number }}" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.8rem;">
+      Berikutnya <i class="fa-solid fa-chevron-right" style="font-size: 0.72rem; margin-left: 4px;"></i>
+    </a>
+  {% endif %}
 </div>
 {% endif %}
