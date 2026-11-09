@@ -19,12 +19,19 @@ def inbox_list(request):
     if channel_filter:
         pass  # Sesuaikan jika field channel sudah ada di model Komentar
 
-    # Hitung statistik untuk badge kartu atas secara dinamis
-    total_all = Komentar.objects.count()
-    total_ig = total_all  # Saat ini fokus utama pada Instagram
+    # Hitung statistik global sentimen dari database
+    global_total = Komentar.objects.count()
     total_positive = Komentar.objects.filter(sentiment='POSITIVE').count()
     total_neutral = Komentar.objects.filter(sentiment='NEUTRAL').count()
     total_negative = Komentar.objects.filter(sentiment='NEGATIVE').count()
+
+    # Hitung total mentions dan instagram sesuai filter sentimen yang aktif
+    if sentiment_filter:
+        total_all = komentar_qs.count()
+        total_ig = total_all
+    else:
+        total_all = global_total
+        total_ig = global_total
 
     # Siapkan querystring agar filter dropdown tetap aktif saat pindah halaman (pagination)
     params = request.GET.copy()

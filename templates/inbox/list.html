@@ -34,17 +34,17 @@
      1. TAB CARDS BADGE CHANNEL
      ========================================== -->
 <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 20px;">
-  <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; background: var(--blue); color: #fff; margin-bottom: 0;">
-    <div style="background: rgba(255,255,255,0.2); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+  <a href="{% url 'inbox:list' %}" class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; background: {% if not f.sentiment %}var(--blue){% else %}#fff{% endif %}; color: {% if not f.sentiment %}#fff{% else %}var(--text){% endif %}; margin-bottom: 0; text-decoration: none; border-radius: 14px; transition: transform 0.15s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+    <div style="background: {% if not f.sentiment %}rgba(255,255,255,0.2){% else %}#f1f5f9{% endif %}; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: {% if not f.sentiment %}#fff{% else %}var(--blue){% endif %};">
       <i class="fa-solid fa-chart-simple"></i>
     </div>
     <div>
-      <div style="font-size: 0.8rem; opacity: 0.9;">Total Mentions</div>
+      <div style="font-size: 0.8rem; opacity: 0.9;" class="{% if f.sentiment %}muted{% endif %}">Total Mentions</div>
       <div style="font-size: 1.2rem; font-weight: 800;">{{ total_all|default:0 }}</div>
     </div>
-  </div>
+  </a>
 
-  <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 0;">
+  <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 0; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
     <i class="fa-brands fa-instagram" style="font-size: 2rem; color: #e1306c;"></i>
     <div>
       <div class="muted" style="font-size: 0.8rem;">Instagram</div>
@@ -52,29 +52,29 @@
     </div>
   </div>
 
-  <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 0;">
+  <a href="{% url 'inbox:list' %}?sentiment=POSITIVE" class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 0; text-decoration: none; border-radius: 14px; border: {% if f.sentiment == 'POSITIVE' %}2px solid #22c55e{% else %}1px solid transparent{% endif %}; background: {% if f.sentiment == 'POSITIVE' %}#f0fdf4{% else %}#fff{% endif %}; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
     <i class="fa-solid fa-face-smile" style="font-size: 2rem; color: #22c55e;"></i>
     <div>
       <div class="muted" style="font-size: 0.8rem;">Positif</div>
       <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">{{ total_positive|default:0 }}</div>
     </div>
-  </div>
+  </a>
 
-  <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 0;">
+  <a href="{% url 'inbox:list' %}?sentiment=NEUTRAL" class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 0; text-decoration: none; border-radius: 14px; border: {% if f.sentiment == 'NEUTRAL' %}2px solid #3b82f6{% else %}1px solid transparent{% endif %}; background: {% if f.sentiment == 'NEUTRAL' %}#eff6ff{% else %}#fff{% endif %}; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
     <i class="fa-solid fa-face-meh" style="font-size: 2rem; color: #3b82f6;"></i>
     <div>
       <div class="muted" style="font-size: 0.8rem;">Netral</div>
       <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">{{ total_neutral|default:0 }}</div>
     </div>
-  </div>
+  </a>
 
-  <div class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 0;">
+  <a href="{% url 'inbox:list' %}?sentiment=NEGATIVE" class="card" style="padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 0; text-decoration: none; border-radius: 14px; border: {% if f.sentiment == 'NEGATIVE' %}2px solid #ff4d4f{% else %}1px solid transparent{% endif %}; background: {% if f.sentiment == 'NEGATIVE' %}#fef2f2{% else %}#fff{% endif %}; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
     <i class="fa-solid fa-face-frown" style="font-size: 2rem; color: #ff4d4f;"></i>
     <div>
       <div class="muted" style="font-size: 0.8rem;">Negatif</div>
       <div style="font-size: 1.2rem; font-weight: 800; color: var(--text);">{{ total_negative|default:0 }}</div>
     </div>
-  </div>
+  </a>
 </div>
 
 <!-- ==========================================
