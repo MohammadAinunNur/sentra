@@ -25,13 +25,9 @@ def inbox_list(request):
     total_neutral = Komentar.objects.filter(sentiment='NEUTRAL').count()
     total_negative = Komentar.objects.filter(sentiment='NEGATIVE').count()
 
-    # Hitung total mentions dan instagram sesuai filter sentimen yang aktif
-    if sentiment_filter:
-        total_all = komentar_qs.count()
-        total_ig = total_all
-    else:
-        total_all = global_total
-        total_ig = global_total
+    # Total Mentions dan Instagram menampilkan jumlah keseluruhan komentar (tidak mengikuti filter sentimen)
+    total_all = global_total
+    total_ig = global_total
 
     # Siapkan querystring agar filter dropdown tetap aktif saat pindah halaman (pagination)
     params = request.GET.copy()
