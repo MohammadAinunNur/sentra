@@ -129,10 +129,15 @@
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <h4 style="margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--text);">Notifikasi</h4>
                   {% if notif_count > 0 %}
-                  <span class="badge badge-negative" style="font-size: 0.68rem; padding: 2px 7px;">{{ notif_count }} Baru</span>
+                  <span class="badge badge-negative" id="notifHeaderBadge" style="font-size: 0.68rem; padding: 2px 7px;">{{ notif_count }} Baru</span>
                   {% endif %}
                 </div>
-                <button type="button" class="popover-close-btn" id="closeNotifBtn">&times;</button>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <button type="button" id="markAllReadBtn" title="Tandai semua sudah dibaca" style="background: none; border: none; font-size: 0.72rem; color: var(--blue); cursor: pointer; padding: 2px 4px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-check-double"></i> Tandai Dibaca
+                  </button>
+                  <button type="button" class="popover-close-btn" id="closeNotifBtn">&times;</button>
+                </div>
               </div>
 
               <!-- List Notifikasi -->
@@ -241,6 +246,42 @@
       const endDateInput = document.getElementById("filterEndDate");
       const filterForm = document.getElementById("dateFilterForm");
 
+      // Logika hilangkan angka badge notifikasi
+      const serverNotifCount = parseInt("{{ notif_count|default:'0' }}", 10);
+      const userNotifKey = "sentra_notif_seen_{{ user.username }}";
+      const notifBadge = document.getElementById("notifBadge");
+      const notifHeaderBadge = document.getElementById("notifHeaderBadge");
+      const markAllReadBtn = document.getElementById("markAllReadBtn");
+
+      function markNotifsAsRead() {
+        if (notifBadge) {
+          notifBadge.style.display = "none";
+        }
+        if (notifHeaderBadge) {
+          notifHeaderBadge.textContent = "Sudah Dibaca";
+          notifHeaderBadge.className = "badge badge-neutral";
+          notifHeaderBadge.style.background = "#edf2f7";
+          notifHeaderBadge.style.color = "#475569";
+        }
+        try {
+          localStorage.setItem(userNotifKey, serverNotifCount.toString());
+        } catch (err) {}
+      }
+
+      // Cek saat halaman dimuat: jika user sudah pernah membuka notifikasi ini, sembunyikan badge
+      try {
+        const lastSeen = parseInt(localStorage.getItem(userNotifKey) || "0", 10);
+        if (lastSeen >= serverNotifCount && notifBadge) {
+          notifBadge.style.display = "none";
+          if (notifHeaderBadge) {
+            notifHeaderBadge.textContent = "Sudah Dibaca";
+            notifHeaderBadge.className = "badge badge-neutral";
+            notifHeaderBadge.style.background = "#edf2f7";
+            notifHeaderBadge.style.color = "#475569";
+          }
+        }
+      } catch (err) {}
+
       function toggleDateFilter(forceClose) {
         if (!dateFilterMenu) return;
         if (forceClose || dateFilterMenu.style.display === "block") {
@@ -258,7 +299,16 @@
         } else {
           notifMenu.style.display = "block";
           if (dateFilterMenu) dateFilterMenu.style.display = "none";
+          // Hilangkan angka notifikasi saat popover dibuka
+          markNotifsAsRead();
         }
+      }
+
+      if (markAllReadBtn) {
+        markAllReadBtn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          markNotifsAsRead();
+        });
       }
 
       if (dateFilterBtn) {
