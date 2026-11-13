@@ -91,7 +91,9 @@ def ticket_create(request):
         ticket = form.save(commit=False)
         ticket.mention = mention
         ticket.created_by = request.user
-        ticket.pic = ticket.pic or pick_pic(ticket.unit)
+        # Pastikan PIC terisi dengan pengguna ber-role PIC yang valid
+        if not ticket.pic or getattr(ticket.pic, "role", None) != "pic":
+            ticket.pic = pick_pic(ticket.unit)
         ticket.due_at = timezone.now() + timedelta(hours=sla_hours(ticket.priority))
         ticket.save()
         ticket.add_history("Tiket dibuat", actor=request.user)

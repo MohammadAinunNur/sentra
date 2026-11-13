@@ -21,7 +21,7 @@ def dashboard(request):
 
     # Halaman ini khusus PIC (superuser boleh lihat). Role lain kembali ke dashboard biasa.
     if user.role != user.Role.PIC and not user.is_superuser:
-        return redirect("pic:dashboard")
+        return redirect("core:dashboard")
 
     now = timezone.now()
     near_limit = now + timedelta(hours=NEAR_SLA_HOURS)
