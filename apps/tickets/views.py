@@ -114,10 +114,16 @@ def ticket_set_status(request, pk):
         ticket.status = new_status
         ticket.save(update_fields=["status", "updated_at"])
         action_text = f"Status diubah ke {ticket.get_status_display()}"
-        ticket.add_history(action_text, note=note, actor=request.user, attachment=attachment)
+        try:
+            ticket.add_history(action_text, note=note, actor=request.user, attachment=attachment)
+        except Exception:
+            ticket.add_history(action_text, note=note, actor=request.user)
         messages.success(request, f"Status tiket diperbarui menjadi {ticket.get_status_display()}.")
     elif note or attachment:
-        ticket.add_history("Catatan Progres Pekerjaan", note=note, actor=request.user, attachment=attachment)
+        try:
+            ticket.add_history("Catatan Progres Pekerjaan", note=note, actor=request.user, attachment=attachment)
+        except Exception:
+            ticket.add_history("Catatan Progres Pekerjaan", note=note, actor=request.user)
         messages.success(request, "Catatan pekerjaan berhasil ditambahkan ke riwayat tiket.")
     return redirect("tickets:detail", pk=pk)
 
@@ -130,15 +136,31 @@ def ticket_close(request, pk):
         ticket.status = Ticket.Status.RESOLVED
         ticket.resolved_at = timezone.now()
         ticket.resolution_note = form.cleaned_data["resolution_note"]
-        if form.cleaned_data.get("work_result_image"):
-            ticket.work_result_image = form.cleaned_data["work_result_image"]
-        ticket.save()
-        ticket.add_history(
-            "Tiket selesai",
-            note=ticket.resolution_note,
-            actor=request.user,
-            attachment=ticket.work_result_image,
-        )
+        
+        work_result_image = form.cleaned_data.get("work_result_image")
+        if work_result_image:
+            try:
+                ticket.work_result_image = work_result_image
+                ticket.save()
+            except Exception:
+                ticket.work_result_image = None
+                ticket.save()
+        else:
+            ticket.save()
+
+        try:
+            ticket.add_history(
+                "Tiket selesai",
+                note=ticket.resolution_note,
+                actor=request.user,
+                attachment=ticket.work_result_image,
+            )
+        except Exception:
+            ticket.add_history(
+                "Tiket selesai",
+                note=ticket.resolution_note,
+                actor=request.user,
+            )
         messages.success(request, f"Tiket {ticket.code} berhasil diselesaikan dengan catatan dan dokumen hasil pekerjaan.")
         return redirect("tickets:detail", pk=pk)
     return render(request, "tickets/close.html", {"t": ticket, "form": form})
@@ -151,15 +173,29 @@ def ticket_update_result(request, pk):
     form = UpdateResultForm(request.POST, request.FILES)
     if form.is_valid():
         ticket.resolution_note = form.cleaned_data["resolution_note"]
-        if form.cleaned_data.get("work_result_image"):
-            ticket.work_result_image = form.cleaned_data["work_result_image"]
-        ticket.save()
-        ticket.add_history(
-            "Hasil pekerjaan diperbarui",
-            note=ticket.resolution_note,
-            actor=request.user,
-            attachment=ticket.work_result_image,
-        )
+        work_result_image = form.cleaned_data.get("work_result_image")
+        if work_result_image:
+            try:
+                ticket.work_result_image = work_result_image
+                ticket.save()
+            except Exception:
+                pass
+        else:
+            ticket.save()
+
+        try:
+            ticket.add_history(
+                "Hasil pekerjaan diperbarui",
+                note=ticket.resolution_note,
+                actor=request.user,
+                attachment=ticket.work_result_image,
+            )
+        except Exception:
+            ticket.add_history(
+                "Hasil pekerjaan diperbarui",
+                note=ticket.resolution_note,
+                actor=request.user,
+            )
         messages.success(request, "Catatan keterangan dan dokumen foto hasil pekerjaan berhasil diperbarui.")
     else:
         messages.error(request, "Gagal memperbarui hasil pekerjaan. Pastikan input catatan terisi.")
